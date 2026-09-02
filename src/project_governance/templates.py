@@ -12,7 +12,7 @@ def template_path(kind: str, directory: Path | None = None) -> Path:
     return candidate
 
 def render_record(metadata: RecordMetadata, body: str = "") -> str:
-    return render_frontmatter(metadata) + "\n" + body.rstrip() + "\n"
+    return render_frontmatter(metadata) + body.rstrip() + "\n"
 
 def load_template(kind: str, directory: Path | None = None) -> str:
     return template_path(kind, directory).read_text(encoding="utf-8")
