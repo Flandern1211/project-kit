@@ -50,9 +50,8 @@ requirements and design records are reviewed.
 
 ## Task 1 focused verification
 
-- `py -3 -m pytest -q tests/test_records.py` — pending in this worktree after
-  review fixes.
-- `py -3 -m compileall -q src` — pending.
-- `git diff --check` — pending.
+- `py -3 -m pytest -q` — 6 passed.
+- `py -3 -m compileall -q src tests` — passed.
+- `git diff --check` — passed.
 <!-- PGK_HANDOFF_END -->
 
