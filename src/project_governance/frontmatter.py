@@ -37,7 +37,7 @@ def parse_frontmatter(text: str) -> tuple[RecordMetadata, str]:
             date.fromisoformat(str(values["updated"])), related)
     except (ValueError, TypeError) as exc:
         raise FrontmatterError(str(exc)) from exc
-    return metadata, text[end + 4:]
+    return metadata, text[end + 5:]
 
 def render_frontmatter(metadata: RecordMetadata) -> str:
     lines = ["---"] + [f"{k}: {v}" for k, v in metadata.as_dict().items() if k != "related"]
