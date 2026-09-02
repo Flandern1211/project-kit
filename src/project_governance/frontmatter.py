@@ -1,4 +1,5 @@
 from datetime import date
+import re
 from .models import RecordMetadata, RecordType, Status
 
 class FrontmatterError(ValueError):
@@ -7,12 +8,17 @@ class FrontmatterError(ValueError):
 REQUIRED = ("id", "type", "status", "created", "updated")
 
 def parse_frontmatter(text: str) -> tuple[RecordMetadata, str]:
-    if not text.startswith("---\n"):
+    opening = re.match(r"^---\r?\n", text)
+    if not opening:
         raise FrontmatterError("frontmatter must start with ---")
-    end = text.find("\n---", 4)
-    if end < 0:
+    closing = re.search(r"^---\r?$", text[opening.end():], re.MULTILINE)
+    if not closing:
         raise FrontmatterError("frontmatter closing marker is missing")
-    raw = text[4:end].splitlines()
+    content_end = opening.end() + closing.start()
+    body_start = opening.end() + closing.end()
+    if text[body_start:body_start + 2] == "\r\n": body_start += 2
+    elif text[body_start:body_start + 1] == "\n": body_start += 1
+    raw = text[opening.end():content_end].splitlines()
     values: dict[str, object] = {}
     related: list[str] = []
     in_related = False
@@ -37,7 +43,7 @@ def parse_frontmatter(text: str) -> tuple[RecordMetadata, str]:
             date.fromisoformat(str(values["updated"])), related)
     except (ValueError, TypeError) as exc:
         raise FrontmatterError(str(exc)) from exc
-    return metadata, text[end + 5:]
+    return metadata, text[body_start:]
 
 def render_frontmatter(metadata: RecordMetadata) -> str:
     lines = ["---"] + [f"{k}: {v}" for k, v in metadata.as_dict().items() if k != "related"]

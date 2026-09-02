@@ -1,5 +1,9 @@
 # $title
 
-## Decision
-
-## Consequences
+## Purpose
+## Scope
+## Acceptance
+## Evidence
+## Changes
+## Blockers
+## Next action

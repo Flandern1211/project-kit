@@ -1,5 +1,9 @@
 # $title
 
-## Problem
-
+## Purpose
+## Scope
+## Acceptance
 ## Evidence
+## Changes
+## Blockers
+## Next action

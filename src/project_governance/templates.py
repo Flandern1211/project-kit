@@ -18,5 +18,8 @@ def load_template(kind: str, directory: Path | None = None) -> str:
     return template_path(kind, directory).read_text(encoding="utf-8")
 
 def render_template(kind: str, metadata: RecordMetadata, values: dict[str, str] | None = None, directory: Path | None = None) -> str:
-    content = Template(load_template(kind, directory)).safe_substitute(values or {})
+    try:
+        content = Template(load_template(kind, directory)).substitute(values or {})
+    except KeyError as exc:
+        raise ValueError(f"missing template variable: {exc.args[0]}") from exc
     return render_record(metadata, content)

@@ -1,5 +1,9 @@
 # $title
 
-## Context
-
-## Decision
+## Purpose
+## Scope
+## Acceptance
+## Evidence
+## Changes
+## Blockers
+## Next action
