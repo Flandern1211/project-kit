@@ -17,7 +17,7 @@ v0.1 CLI behavior is covered by automated tests.
 
 ## Evidence
 
-- `py -3 -m pytest -o addopts='' -q` — 19 passed;
+- `py -3 -m pytest -o addopts='' -q` — 20 passed;
 - `py -3 -m compileall -q src tests` — passed;
 - `git diff --check` — passed;
 - `D:\skills\bootstrap-project-governance\scripts\validate_project_docs.py .` — 0 errors, 0 warnings;
