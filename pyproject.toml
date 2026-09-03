@@ -24,4 +24,3 @@ project_governance = ["templates/*.md"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
-

@@ -104,4 +104,3 @@ def update_handoff(
     if not dry_run:
         record.write_text(updated, encoding="utf-8")
     return record
-

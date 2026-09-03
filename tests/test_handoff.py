@@ -27,4 +27,3 @@ def test_handoff_updates_only_marked_section_with_git_and_next_action(tmp_path: 
     assert "Next action: run the integration suite" in content
     assert "Verification: unit tests: 10 passed" in content
     assert "Blockers: none" in content
-
