@@ -1,10 +1,10 @@
 ---
 id: TASK-000
 type: task
-status: in_progress
+status: verified
 owner: root
 created: 2026-09-02
-updated: 2026-09-02
+updated: 2026-09-03
 related:
   - REQ-001
   - DES-001
@@ -52,12 +52,12 @@ architecture that it will later provide to other projects.
 ## Handoff
 
 <!-- PGK_HANDOFF_START -->
-Status: in_progress
+Status: verified
 Branch: codex/bootstrap-v0.1
-HEAD: fc3c390e99d55af0bf3ccc0c34b6c857449bf2b5
-Worktree: clean
-Verification: pgk check --json: ok; project validator: 0 errors
+HEAD: 799a3eaba69f5080940d28c3106fb61726288e50
+Worktree: dirty
+Verification: 20 tests passed; pgk check ok; document validator 0 errors
 Blockers: none
-Next action: review v0.1 self-validation results
+Next action: review and approve the first TouzhiAgent external trial
 <!-- PGK_HANDOFF_END -->
 
