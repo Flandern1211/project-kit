@@ -8,5 +8,5 @@ htmlcov/
 .mypy_cache/
 .ruff_cache/
 .worktrees/
+.superpowers/
 .project-governance.local.toml
-

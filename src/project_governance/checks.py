@@ -14,7 +14,8 @@ class CheckResult:
 
 def run_checks(root: str | Path) -> CheckResult:
     root = Path(root); issues = []; ids = {}
-    files = sorted(p for p in root.rglob('*.md') if '.git' not in p.parts)
+    ignored_dirs = {'.git', '.pytest-tmp', '.superpowers', '.worktrees', '.venv', '.tmp', 'tmp', 'temp'}
+    files = sorted(p for p in root.rglob('*.md') if not any(part in ignored_dirs for part in p.relative_to(root).parts))
     for path in files:
         rel = path.relative_to(root).as_posix()
         text = path.read_text(encoding='utf-8')
@@ -31,10 +32,10 @@ def run_checks(root: str | Path) -> CheckResult:
             if candidate_id:
                 if candidate_id in ids: issues.append({'code':'duplicate_id','path':rel,'message':f'duplicate id: {candidate_id}'})
                 ids[candidate_id] = rel
-            for target in re.findall(r'\[[^]]*\]\(([^)]+)\)', text):
-                target = target.split('#',1)[0]
-                if target and not re.match(r'^[a-zA-Z][a-zA-Z0-9+.-]*:', target):
-                    if not (path.parent / target).exists(): issues.append({'code':'broken_link','path':rel,'message':f'broken link: {target}'})
+        for target in re.findall(r'\[[^]]*\]\(([^)]+)\)', text):
+            target = target.split('#',1)[0]
+            if target and not re.match(r'^[a-zA-Z][a-zA-Z0-9+.-]*:', target):
+                if not (path.parent / target).exists(): issues.append({'code':'broken_link','path':rel,'message':f'broken link: {target}'})
     for item in BASELINE:
         if not (root/item).exists(): issues.append({'code':'missing_baseline','path':item,'message':f'missing required file: {item}'})
     return CheckResult(not issues, tuple(sorted(issues, key=lambda x:(x['code'],x['path'],x['message']))), tuple(p.relative_to(root).as_posix() for p in files))
