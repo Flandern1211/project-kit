@@ -29,6 +29,34 @@ python -m pytest -q
 python -m project_governance --help
 ```
 
+## 使用方法
+
+在一个新项目中，先进入项目根目录并初始化治理文件：
+
+```powershell
+pgk init --root . --project-name MyProject
+pgk check --root .
+```
+
+在已有项目中，先用只读命令查看接入情况：
+
+```powershell
+pgk adopt --root C:\path\to\project --json
+pgk doctor --root C:\path\to\project
+```
+
+创建任务并在不同 Agent/会话之间交接：
+
+```powershell
+pgk new task TASK-001 "Implement feature" --root . --status in_progress --related REQ-001
+pgk handoff TASK-001 --root . --next-action "run integration tests" --verification "unit tests passed"
+pgk check --root . --json
+```
+
+`pgk new` 也支持 `requirement`、`design`、`decision`、`bug` 和
+`verification`。写入命令支持 `--dry-run`，面向 Agent 的调用可使用 `--json`。
+完整参数、状态和协作流程见[使用说明](docs/usage.md)。
+
 常用命令：
 
 ```text
@@ -49,6 +77,7 @@ TouzhiAgent 是第一个外部试验项目。
 ## 文档
 
 - [项目文档索引](docs/INDEX.md)
+- [使用说明](docs/usage.md)
 - [v0.1 需求](docs/requirements/2026-09-02-project-governance-kit-v0.1-requirements.md)
 - [v0.1 设计](docs/design/2026-09-02-project-governance-kit-v0.1-design.md)
 - [验收记录](docs/verification/VER-000-bootstrap.md)

@@ -6,6 +6,7 @@ second copy of the documents it links to.
 ## Current state
 
 - [Project status](STATUS.md)
+- [Usage guide](usage.md)
 - [Project structure](project-structure.md)
 - [Project conventions](project-conventions.md)
 
@@ -29,4 +30,3 @@ second copy of the documents it links to.
 - [TouzhiAgent](C:/Users/31800/Documents/ChatGPT/TouzhiAgent) is the first
   external trial repository. Its project-specific requirements remain in that
   repository and are not copied into this toolkit.
-

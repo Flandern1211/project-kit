@@ -32,6 +32,35 @@ python -m pytest -q
 python -m project_governance --help
 ```
 
+## Usage
+
+From a new project root, initialize the governance files and validate them:
+
+```powershell
+pgk init --root . --project-name MyProject
+pgk check --root .
+```
+
+For an existing project, inspect it first with read-only commands:
+
+```powershell
+pgk adopt --root C:\path\to\project --json
+pgk doctor --root C:\path\to\project
+```
+
+Create a task and hand it between agents or sessions:
+
+```powershell
+pgk new task TASK-001 "Implement feature" --root . --status in_progress --related REQ-001
+pgk handoff TASK-001 --root . --next-action "run integration tests" --verification "unit tests passed"
+pgk check --root . --json
+```
+
+`pgk new` also supports `requirement`, `design`, `decision`, `bug`, and
+`verification`. Write commands support `--dry-run`, and agent callers can use
+`--json`. See the [usage guide](docs/usage.md) for complete arguments,
+statuses, and collaboration flow.
+
 Common commands:
 
 ```text
@@ -53,6 +82,7 @@ external trial project.
 ## Documentation
 
 - [Documentation index](docs/INDEX.md)
+- [Usage guide](docs/usage.md)
 - [v0.1 requirements](docs/requirements/2026-09-02-project-governance-kit-v0.1-requirements.md)
 - [v0.1 design](docs/design/2026-09-02-project-governance-kit-v0.1-design.md)
 - [Verification record](docs/verification/VER-000-bootstrap.md)

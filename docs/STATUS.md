@@ -31,5 +31,5 @@ model provider or issue tracker.
 
 ## Next action
 
-Review the v0.1 self-validation record and decide whether to begin the first
-external TouzhiAgent trial or refine the core document contract.
+Review the usage documentation and decide whether to start the first external
+TouzhiAgent trial.
