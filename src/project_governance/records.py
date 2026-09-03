@@ -37,7 +37,7 @@ class RecordCandidate:
 def _record_files(root: Path) -> Iterable[Path]:
     ignored = {".git", ".venv", ".worktrees", ".superpowers", ".pytest_cache"}
     for path in sorted(root.rglob("*.md")):
-        if not any(part in ignored for part in path.relative_to(root).parts):
+        if not any(part in ignored or part.startswith(".pytest-tmp") for part in path.relative_to(root).parts):
             yield path
 
 

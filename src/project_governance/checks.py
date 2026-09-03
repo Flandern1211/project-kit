@@ -14,8 +14,14 @@ class CheckResult:
 
 def run_checks(root: str | Path) -> CheckResult:
     root = Path(root); issues = []; ids = {}
-    ignored_dirs = {'.git', '.pytest-tmp', '.superpowers', '.worktrees', '.venv', '.tmp', 'tmp', 'temp'}
-    files = sorted(p for p in root.rglob('*.md') if not any(part in ignored_dirs for part in p.relative_to(root).parts))
+    ignored_dirs = {
+        '.git', '.pytest-tmp', '.pytest_cache', '.superpowers', '.worktrees', '.venv',
+        '.mypy_cache', '.ruff_cache', 'node_modules', 'dist', 'build', '.tmp', 'tmp', 'temp',
+    }
+    files = sorted(
+        p for p in root.rglob('*.md')
+        if not any(part in ignored_dirs or part.startswith('.pytest-tmp') for part in p.relative_to(root).parts)
+    )
     for path in files:
         rel = path.relative_to(root).as_posix()
         text = path.read_text(encoding='utf-8')

@@ -46,3 +46,19 @@ def test_record_id_cannot_escape_governance_directory(tmp_path: Path):
 
     with pytest.raises(ValueError, match="record id"):
         create_record(tmp_path, "task", "../outside", "Unsafe")
+
+
+def test_check_does_not_report_generated_cache_documents(tmp_path: Path, capsys):
+    assert main(["init", "--root", str(tmp_path), "--json"]) == 0
+    capsys.readouterr()
+    cache_doc = tmp_path / ".pytest_cache" / "README.md"
+    cache_doc.parent.mkdir()
+    cache_doc.write_text("[broken](missing.md)", encoding="utf-8")
+    temp_doc = tmp_path / ".pytest-tmp-worker" / "README.md"
+    temp_doc.parent.mkdir()
+    temp_doc.write_text("[broken](missing.md)", encoding="utf-8")
+
+    assert main(["check", "--root", str(tmp_path), "--json"]) == 0
+    result = json.loads(capsys.readouterr().out)
+    assert not any(path.startswith(".pytest_cache/") for path in result["checked_files"])
+    assert not any(path.startswith(".pytest-tmp-worker/") for path in result["checked_files"])
