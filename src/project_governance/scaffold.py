@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 
 
@@ -85,7 +86,7 @@ def init_project(
         if not dry_run:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(
-                template.format(project_name=name, date=__import__("datetime").date.today().isoformat()),
+                template.format(project_name=name, date=date.today().isoformat()),
                 encoding="utf-8",
             )
     return ScaffoldResult(tuple(created), tuple(skipped))
@@ -113,4 +114,3 @@ def adopt_project(root: str | Path) -> AdoptionReport:
         if (root / path).exists()
     )
     return AdoptionReport(existing, missing, mappings)
-

@@ -103,7 +103,7 @@ def create_record(
     return path
 
 
-def _index_content(candidates: Sequence[RecordCandidate]) -> str:
+def _index_content(candidates: Sequence[RecordCandidate], *, base_dir: Path) -> str:
     tasks = [item for item in candidates if item.metadata.type is RecordType.TASK]
     bugs = [item for item in candidates if item.metadata.type is RecordType.BUG]
     lines = [
@@ -117,14 +117,14 @@ def _index_content(candidates: Sequence[RecordCandidate]) -> str:
     ]
     if tasks:
         for item in tasks:
-            relative = item.path.relative_to(item.path.parents[3]).as_posix()
+            relative = item.path.relative_to(base_dir).as_posix()
             lines.append(f"- [{item.metadata.id}]({relative}) — {item.metadata.status.value}")
     else:
         lines.append("No active records yet.")
     lines.extend(["", "## Bugs", ""])
     if bugs:
         for item in bugs:
-            relative = item.path.relative_to(item.path.parents[3]).as_posix()
+            relative = item.path.relative_to(base_dir).as_posix()
             lines.append(f"- [{item.metadata.id}]({relative}) — {item.metadata.status.value}")
     else:
         lines.append("No bug records yet.")
@@ -147,7 +147,7 @@ def update_work_index(root: str | Path, *, dry_run: bool = False) -> Path:
         if metadata.type in {RecordType.TASK, RecordType.BUG}:
             candidates.append(RecordCandidate(path, metadata))
     candidates.sort(key=lambda item: item.metadata.id)
-    content = _index_content(candidates)
+    content = _index_content(candidates, base_dir=index.parent)
     if index.exists():
         existing = index.read_text(encoding="utf-8")
         if "<!-- PGK_GENERATED: work-index -->" not in existing:
@@ -156,4 +156,3 @@ def update_work_index(root: str | Path, *, dry_run: bool = False) -> Path:
         index.parent.mkdir(parents=True, exist_ok=True)
         index.write_text(content, encoding="utf-8")
     return index
-

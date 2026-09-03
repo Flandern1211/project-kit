@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from project_governance.frontmatter import parse_frontmatter
+from project_governance.checks import run_checks
 from project_governance.records import DuplicateRecordError, create_record, update_work_index
 from project_governance.scaffold import init_project
 
@@ -42,3 +43,4 @@ def test_update_work_index_is_deterministic_and_does_not_duplicate_records(tmp_p
     assert sum(line.startswith("- [BUG-001]") for line in content.splitlines()) == 1
     assert "## Active\n\n- [TASK-002]" in content
     assert "## Bugs\n\n- [BUG-001]" in content
+    assert run_checks(tmp_path).ok
