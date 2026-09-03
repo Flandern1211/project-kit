@@ -53,5 +53,12 @@ requirements and design records are reviewed.
 - `py -3 -m pytest -q` — 6 passed.
 - `py -3 -m compileall -q src tests` — passed.
 - `git diff --check` — passed.
+
+## Task 2 focused verification
+
+- `py -3 -m pytest -q --basetemp .pytest-tmp tests/test_checks.py tests/test_git_context.py` — 3 passed.
+- `py -3 -m pytest -q --basetemp .pytest-tmp` — 9 passed.
+- `git diff --check` — passed.
+- Environment note: default pytest temp root was denied by Windows permissions; workspace-local `--basetemp .pytest-tmp` was used.
 <!-- PGK_HANDOFF_END -->
 
