@@ -83,6 +83,6 @@ external trial project.
 
 - [Documentation index](docs/INDEX.md)
 - [Usage guide](docs/usage.md)
-- [v0.1 requirements](docs/requirements/2026-09-02-project-governance-kit-v0.1-requirements.md)
+- [v0.1 requirements](docs/requirements/2026-09-02-project-governance-kit-v0.1-requirements.md) · [中文](docs/requirements/2026-09-02-project-governance-kit-v0.1-requirements.zh-CN.md)
 - [v0.1 design](docs/design/2026-09-02-project-governance-kit-v0.1-design.md)
 - [Verification record](docs/verification/VER-000-bootstrap.md)

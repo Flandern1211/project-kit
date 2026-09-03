@@ -11,6 +11,7 @@ updated: 2026-09-02
 - Status: accepted for initial implementation
 - Version: 0.1
 - Date: 2026-09-02
+- Language: English; [中文版本](2026-09-02-project-governance-kit-v0.1-requirements.zh-CN.md)
 
 ## 1. Goal
 

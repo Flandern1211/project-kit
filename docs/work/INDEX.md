@@ -11,6 +11,7 @@ No active tasks.
 
 - [TASK-000 Bootstrap the self-governed toolkit](tasks/TASK-000-bootstrap.md)
 - [TASK-001 Add CLI usage documentation](tasks/TASK-001-add-cli-usage-documentation.md)
+- [TASK-002 Add Chinese requirements document](tasks/TASK-002-add-chinese-requirements-document.md)
 
 ## Bugs
 

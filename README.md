@@ -78,6 +78,6 @@ TouzhiAgent 是第一个外部试验项目。
 
 - [项目文档索引](docs/INDEX.md)
 - [使用说明](docs/usage.md)
-- [v0.1 需求](docs/requirements/2026-09-02-project-governance-kit-v0.1-requirements.md)
+- [v0.1 需求（中文版）](docs/requirements/2026-09-02-project-governance-kit-v0.1-requirements.zh-CN.md)
 - [v0.1 设计](docs/design/2026-09-02-project-governance-kit-v0.1-design.md)
 - [验收记录](docs/verification/VER-000-bootstrap.md)

@@ -12,7 +12,8 @@ second copy of the documents it links to.
 
 ## Requirements
 
-- [Project Governance Kit v0.1 requirements](requirements/2026-09-02-project-governance-kit-v0.1-requirements.md)
+- [Project Governance Kit v0.1 requirements (English)](requirements/2026-09-02-project-governance-kit-v0.1-requirements.md)
+- [Project Governance Kit v0.1 需求规格（中文）](requirements/2026-09-02-project-governance-kit-v0.1-requirements.zh-CN.md)
 
 ## Design
 
