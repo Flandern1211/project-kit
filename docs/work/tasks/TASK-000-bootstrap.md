@@ -47,5 +47,11 @@ Status: bootstrap in progress.
 
 Next action: implement the v0.1 CLI core and its fixture tests after the
 requirements and design records are reviewed.
+
+## Task 1 focused verification
+
+- `py -3 -m pytest -q` — 6 passed.
+- `py -3 -m compileall -q src tests` — passed.
+- `git diff --check` — passed.
 <!-- PGK_HANDOFF_END -->
 
