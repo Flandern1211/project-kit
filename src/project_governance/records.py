@@ -21,6 +21,7 @@ RECORD_DIRECTORIES = {
     RecordType.BUG: Path("docs/work/bugs"),
     RecordType.VERIFICATION: Path("docs/verification"),
 }
+RECORD_ID_PATTERN = re.compile(r"^(?:REQ|DES|ADR|PLAN|TASK|BUG|VER|INC)-[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 
 class DuplicateRecordError(FileExistsError):
@@ -36,7 +37,7 @@ class RecordCandidate:
 def _record_files(root: Path) -> Iterable[Path]:
     ignored = {".git", ".venv", ".worktrees", ".superpowers", ".pytest_cache"}
     for path in sorted(root.rglob("*.md")):
-        if not any(part in ignored for part in path.relative_to(root).parts):
+        if not any(part in ignored or part.startswith(".pytest-tmp") for part in path.relative_to(root).parts):
             yield path
 
 
@@ -80,6 +81,8 @@ def create_record(
     if not root.exists() or not root.is_dir():
         raise ValueError(f"project root does not exist: {root}")
     record_type = _kind(kind)
+    if not RECORD_ID_PATTERN.fullmatch(record_id):
+        raise ValueError("record id must use a safe prefix and filename characters")
     try:
         record_status = status if isinstance(status, Status) else Status(status)
     except ValueError as exc:
