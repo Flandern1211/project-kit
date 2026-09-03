@@ -40,25 +40,24 @@ architecture that it will later provide to other projects.
 - a verification record cites the commands and results;
 - no secrets or project-specific business rules are included.
 
+## Task 5 self-validation
+
+- `pgk check --root . --json` returned `ok=true` with no issues;
+- editable package installation and `pgk --help` succeeded;
+- empty-project initialization, check, and record dry-run succeeded;
+- TouzhiAgent was inspected with read-only `pgk adopt`; its files were not changed;
+- the verification record [VER-000](../../verification/VER-000-bootstrap.md)
+  contains the command results and unverified boundaries.
+
 ## Handoff
 
 <!-- PGK_HANDOFF_START -->
-Status: bootstrap in progress.
-
-Next action: implement the v0.1 CLI core and its fixture tests after the
-requirements and design records are reviewed.
-
-## Task 1 focused verification
-
-- `py -3 -m pytest -q` — 6 passed.
-- `py -3 -m compileall -q src tests` — passed.
-- `git diff --check` — passed.
-
-## Task 2 focused verification
-
-- `py -3 -m pytest -q --basetemp .pytest-tmp tests/test_checks.py tests/test_git_context.py` — 3 passed.
-- `py -3 -m pytest -q --basetemp .pytest-tmp` — 9 passed.
-- `git diff --check` — passed.
-- Environment note: default pytest temp root was denied by Windows permissions; workspace-local `--basetemp .pytest-tmp` was used.
+Status: in_progress
+Branch: codex/bootstrap-v0.1
+HEAD: fc3c390e99d55af0bf3ccc0c34b6c857449bf2b5
+Worktree: clean
+Verification: pgk check --json: ok; project validator: 0 errors
+Blockers: none
+Next action: review v0.1 self-validation results
 <!-- PGK_HANDOFF_END -->
 

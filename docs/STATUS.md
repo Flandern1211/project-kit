@@ -1,18 +1,18 @@
 # Project status
 
 ```yaml
-status: bootstrap_in_progress
+status: verified
 version: 0.1.0.dev0
-active_task: TASK-000-bootstrap
+active_task: none
 owner: root
-updated: 2026-09-02
+updated: 2026-09-03
 ```
 
 ## Current scope
 
-The repository is establishing the v0.1 governance contract and a minimal
-Python CLI. The toolkit is agent-first and remains readable and usable without
-any specific model provider or issue tracker.
+The v0.1 governance contract and minimal Python CLI are implemented. The
+toolkit is agent-first and remains readable and usable without any specific
+model provider or issue tracker.
 
 ## Known constraints
 
@@ -21,8 +21,15 @@ any specific model provider or issue tracker.
 - no automatic commit, push, merge, deletion, or model-provider call;
 - TouzhiAgent is an external trial, not a source of business rules for this kit.
 
+## Verification snapshot
+
+- `pgk check --root . --json`: `ok=true`, no issues;
+- editable package installation and `pgk --help`: passed;
+- empty-project `pgk init`, `pgk check`, and `pgk new --dry-run`: passed;
+- TouzhiAgent `pgk adopt`: read-only mapping report produced, no files changed;
+- full test suite, compile check, and project-document validator: passed.
+
 ## Next action
 
-Complete the v0.1 requirements/design review, then implement the smallest
-CLI slice with tests and run the toolkit's own checks against this repository.
-
+Review the v0.1 self-validation record and decide whether to begin the first
+external TouzhiAgent trial or refine the core document contract.

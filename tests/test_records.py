@@ -23,3 +23,11 @@ def test_frontmatter_accepts_crlf_and_exact_closing_marker():
 def test_template_requires_title():
     with pytest.raises(ValueError, match="title"):
         render_template("task", metadata())
+
+
+def test_verified_status_is_a_valid_record_lifecycle_state():
+    source = render_frontmatter(
+        RecordMetadata("VER-001", RecordType.VERIFICATION, Status.VERIFIED, date(2026, 9, 3), date(2026, 9, 3))
+    )
+    parsed, _ = parse_frontmatter(source)
+    assert parsed.status is Status.VERIFIED

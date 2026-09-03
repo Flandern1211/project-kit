@@ -15,6 +15,7 @@ class Status(StrEnum):
     ACCEPTED = "accepted"
     IN_PROGRESS = "in_progress"
     BLOCKED = "blocked"
+    VERIFIED = "verified"
     DONE = "done"
     REJECTED = "rejected"
 
