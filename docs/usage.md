@@ -234,4 +234,3 @@ the handoff, and link the record from the pull request.
 - v0.1 does not call GitHub APIs, model providers, or other network services;
 - never put passwords, API keys, private data, full model payloads, or chain-of-thought in records;
 - generated Markdown/TOML files remain ordinary project files and can be maintained without `pgk`.
-
