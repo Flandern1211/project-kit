@@ -7,8 +7,13 @@ class product surface.
 src/project_governance/
 ├── cli.py          # argparse command entry points
 ├── config.py       # project configuration and profiles
-├── documents.py    # metadata, templates, and record creation
+├── frontmatter.py  # Markdown metadata parsing and rendering
+├── models.py       # record types and lifecycle states
+├── templates.py    # record template loading and rendering
+├── scaffold.py     # new-project initialization
+├── records.py      # records, indexes, board, and activity
 ├── checks.py       # read-only repository validation
+├── authorization.py# protected-action authorization checks
 ├── git_context.py  # safe Git inspection
 └── handoff.py      # task handoff updates
 ```
@@ -27,4 +32,3 @@ business code.
 - `docs/verification/`: evidence-backed validation and acceptance records;
 - `docs/operations/`: runbooks, incidents, and postmortems when a project runs
   a service.
-

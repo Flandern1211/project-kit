@@ -49,6 +49,22 @@ related:
 
 审查中文版需求，确认后开始 TouzhiAgent 的第一次外部接入试验。
 
+## Owner
+
+root
+
+## Files
+
+- `docs/requirements/2026-09-02-project-governance-kit-v0.1-requirements.zh-CN.md`;
+- English requirements and documentation indexes.
+
+## Git
+
+branch: codex/bootstrap-v0.1
+worktree: repository checkout
+base_commit: N/A
+head_commit: 573a208377a52e252299d8bafad400114987c8ce
+
 ## Handoff
 
 <!-- PGK_HANDOFF_START -->
@@ -56,6 +72,8 @@ Status: verified
 Branch: codex/bootstrap-v0.1
 HEAD: 573a208377a52e252299d8bafad400114987c8ce
 Worktree: dirty
+Dirty: true
+Uncommitted: present
 Verification: pgk check ok; document validator 0 errors
 Blockers: none
 Next action: review the Chinese requirements document

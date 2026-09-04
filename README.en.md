@@ -41,6 +41,13 @@ pgk init --root . --project-name MyProject
 pgk check --root .
 ```
 
+Recommended first-agent flow: read `AGENTS.md`, `docs/INDEX.md`, and
+`docs/STATUS.md`, then run `pgk doctor --root . --json`. After the user accepts
+the requirements, create the REQ → DES/ADR → TASK → REVIEW → VER records and
+run `pgk check` plus `pgk handoff` before pausing or handing off. `git init`,
+commit, push, Issue/PR, merge, tag, release, and deletion are protected actions
+that remain user-confirmed; the Kit never performs them automatically.
+
 For an existing project, inspect it first with read-only commands:
 
 ```powershell
@@ -56,8 +63,8 @@ pgk handoff TASK-001 --root . --next-action "run integration tests" --verificati
 pgk check --root . --json
 ```
 
-`pgk new` also supports `requirement`, `design`, `decision`, `bug`, and
-`verification`. Write commands support `--dry-run`, and agent callers can use
+`pgk new` also supports `requirement`, `design`, `decision`, `task`, `bug`,
+`review`, and `verification`. Write commands support `--dry-run`, and agent callers can use
 `--json`. See the [usage guide](docs/usage.md) for complete arguments,
 statuses, and collaboration flow.
 

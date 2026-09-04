@@ -8,16 +8,19 @@ class RecordType(StrEnum):
     DECISION = "decision"
     TASK = "task"
     BUG = "bug"
+    REVIEW = "review"
     VERIFICATION = "verification"
 
 class Status(StrEnum):
     DRAFT = "draft"
     ACCEPTED = "accepted"
     IN_PROGRESS = "in_progress"
+    IN_REVIEW = "in_review"
     BLOCKED = "blocked"
     VERIFIED = "verified"
     DONE = "done"
     REJECTED = "rejected"
+    SUPERSEDED = "superseded"
 
 @dataclass(slots=True)
 class RecordMetadata:

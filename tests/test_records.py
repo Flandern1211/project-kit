@@ -31,3 +31,23 @@ def test_verified_status_is_a_valid_record_lifecycle_state():
     )
     parsed, _ = parse_frontmatter(source)
     assert parsed.status is Status.VERIFIED
+
+
+def test_review_record_type_and_review_lifecycle_states_are_available():
+    assert RecordType.REVIEW.value == "review"
+    assert Status.IN_REVIEW.value == "in_review"
+    assert Status.SUPERSEDED.value == "superseded"
+
+
+def test_review_template_contains_review_contract_sections():
+    review_metadata = RecordMetadata(
+        "REVIEW-001", RecordType.REVIEW, Status.IN_REVIEW,
+        date(2026, 9, 4), date(2026, 9, 4), ["TASK-001"],
+    )
+    rendered = render_template("review", review_metadata, {"title": "Baseline review"})
+    for section in (
+        "Purpose", "Owner", "Scope", "Acceptance", "Evidence", "Changes", "Blockers",
+        "Next action", "Authorization", "Base commit", "Head commit",
+        "Findings", "Verdict",
+    ):
+        assert f"## {section}" in rendered

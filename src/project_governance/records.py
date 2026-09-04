@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from typing import Iterable, Sequence
 
@@ -19,9 +19,11 @@ RECORD_DIRECTORIES = {
     RecordType.DECISION: Path("docs/decisions"),
     RecordType.TASK: Path("docs/work/tasks"),
     RecordType.BUG: Path("docs/work/bugs"),
+    RecordType.REVIEW: Path("docs/reviews"),
     RecordType.VERIFICATION: Path("docs/verification"),
 }
-RECORD_ID_PATTERN = re.compile(r"^(?:REQ|DES|ADR|PLAN|TASK|BUG|VER|INC)-[A-Za-z0-9][A-Za-z0-9._-]*$")
+RECORD_ID_PATTERN = re.compile(r"^(?:REQ|DES|ADR|PLAN|TASK|BUG|REVIEW|VER|INC)-[A-Za-z0-9][A-Za-z0-9._-]*$")
+RECORD_PREFIXES = {RecordType.REQUIREMENT: "REQ-", RecordType.DESIGN: "DES-", RecordType.DECISION: "ADR-", RecordType.TASK: "TASK-", RecordType.BUG: "BUG-", RecordType.REVIEW: "REVIEW-", RecordType.VERIFICATION: "VER-"}
 
 
 class DuplicateRecordError(FileExistsError):
@@ -32,10 +34,11 @@ class DuplicateRecordError(FileExistsError):
 class RecordCandidate:
     path: Path
     metadata: RecordMetadata
+    body: str = ""
 
 
 def _record_files(root: Path) -> Iterable[Path]:
-    ignored = {".git", ".venv", ".worktrees", ".superpowers", ".pytest_cache"}
+    ignored = {".git", ".agent", ".venv", ".worktrees", ".superpowers", ".pytest_cache"}
     for path in sorted(root.rglob("*.md")):
         if not any(part in ignored or part.startswith(".pytest-tmp") for part in path.relative_to(root).parts):
             yield path
@@ -81,8 +84,12 @@ def create_record(
     if not root.exists() or not root.is_dir():
         raise ValueError(f"project root does not exist: {root}")
     record_type = _kind(kind)
+    if not record_id.startswith(RECORD_PREFIXES[record_type]):
+        raise ValueError(f"record id prefix does not match type: {record_type.value}")
     if not RECORD_ID_PATTERN.fullmatch(record_id):
         raise ValueError("record id must use a safe prefix and filename characters")
+    if any(not RECORD_ID_PATTERN.fullmatch(item) for item in related):
+        raise ValueError("related ids must use a safe prefix and filename characters")
     try:
         record_status = status if isinstance(status, Status) else Status(status)
     except ValueError as exc:
@@ -101,8 +108,12 @@ def create_record(
     if path.exists():
         raise DuplicateRecordError(f"record path already exists: {path.relative_to(root).as_posix()}")
     if not dry_run:
+        _ensure_views_writable(root)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(render_template(record_type.value, metadata, {"title": title}), encoding="utf-8")
+        update_work_index(root)
+        update_indexes(root)
+        append_activity(root, "pgk", "create", record_id, "N/A", "created")
     return path
 
 
@@ -159,3 +170,125 @@ def update_work_index(root: str | Path, *, dry_run: bool = False) -> Path:
         index.parent.mkdir(parents=True, exist_ok=True)
         index.write_text(content, encoding="utf-8")
     return index
+
+
+_INDEXES = {
+    RecordType.REQUIREMENT: Path("docs/requirements/INDEX.md"),
+    RecordType.DESIGN: Path("docs/design/INDEX.md"),
+    RecordType.DECISION: Path("docs/decisions/INDEX.md"),
+    RecordType.TASK: Path("docs/work/tasks/INDEX.md"),
+    RecordType.BUG: Path("docs/work/bugs/INDEX.md"),
+    RecordType.REVIEW: Path("docs/reviews/INDEX.md"),
+    RecordType.VERIFICATION: Path("docs/verification/INDEX.md"),
+}
+
+
+def _ensure_views_writable(root: Path) -> None:
+    """Fail before record creation if any generated view is project-owned."""
+    views = [(root / path, f"{kind.value}-index") for kind, path in _INDEXES.items()]
+    views.append((root / "docs/work/INDEX.md", "work-index"))
+    views.append((root / "docs/work/BOARD.md", "board"))
+    views.append((root / "docs/activity/ACTIVITY.md", "activity"))
+    for path, marker in views:
+        if path.exists() and f"<!-- PGK_GENERATED: {marker} -->" not in path.read_text(encoding="utf-8"):
+            raise FileExistsError(f"refusing to overwrite project-owned view: {path}")
+
+
+def _view_write(path: Path, content: str, marker: str, *, dry_run: bool) -> None:
+    if path.exists() and f"<!-- PGK_GENERATED: {marker} -->" not in path.read_text(encoding="utf-8"):
+        raise FileExistsError(f"refusing to overwrite project-owned view: {path}")
+    if not dry_run:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+
+
+def _directory_index(items: Sequence[RecordCandidate], index: Path, marker: str, title: str) -> str:
+    lines = [f"<!-- PGK_GENERATED: {marker} -->", f"# {title}", "", "The index is generated from records.", ""]
+    if items:
+        for item in sorted(items, key=lambda x: x.metadata.id):
+            rel = item.path.relative_to(index.parent).as_posix()
+            lines.append(f"- [{item.metadata.id}]({rel}) — {item.metadata.status.value}")
+    else:
+        lines.append("No records yet.")
+    return "\n".join(lines) + "\n"
+
+
+def _board_content(items: Sequence[RecordCandidate]) -> str:
+    lines = ["<!-- PGK_GENERATED: board -->", "# Work board", "", "| ID | type | status | owner | related | branch/worktree | verification | blocker | next |", "|---|---|---|---|---|---|---|---|---|"]
+    for item in sorted(items, key=lambda x: x.metadata.id):
+        m = item.metadata
+        related = ", ".join(m.related).replace("\r", " ").replace("\n", " ") if m.related else "N/A"
+        def section(name: str) -> str:
+            matches = re.finditer(rf"(?ims)^##\s+{re.escape(name)}\s*$([\s\S]*?)(?=^##\s+|\Z)", item.body)
+            values = [next((line.strip(" -*\t") for line in match.group(1).splitlines() if line.strip()), "N/A") for match in matches]
+            return next((value for value in reversed(values) if value.casefold() != "n/a"), values[-1] if values else "N/A")
+        def cell(value: str) -> str:
+            value = re.sub(r"\[([^\]]+)\]\([^)]*\)", r"\1", value)
+            return value.replace("|", "\\|").replace("\r", " ").replace("\n", " ").strip() or "N/A"
+        def git_value(name: str) -> str:
+            matches = re.findall(rf"(?im)^\s*{re.escape(name)}\s*:\s*(.+)$", item.body)
+            return next((value.strip() for value in reversed(matches) if value.strip().casefold() != "n/a"), "N/A")
+        branch, worktree = git_value("branch"), git_value("worktree")
+        handoff_matches = list(re.finditer(r"(?ims)^##\s+Handoff\s*$([\s\S]*?)(?=^##\s+|\Z)", item.body))
+        handoff = handoff_matches[-1].group(1) if handoff_matches else ""
+        def handoff_value(name: str) -> str:
+            matches = re.findall(rf"(?im)^\s*{re.escape(name)}\s*:\s*(.+)$", handoff)
+            return next((value.strip() for value in reversed(matches) if value.strip()), "N/A")
+
+        if branch == "N/A":
+            branch = handoff_value("Branch")
+        if worktree == "N/A":
+            worktree = handoff_value("Worktree")
+        verification = handoff_value("Verification")
+        if verification == "N/A":
+            verification = section("Evidence")
+        blocker = handoff_value("Blockers")
+        if blocker == "N/A":
+            blocker = section("Blockers")
+        next_action = handoff_value("Next action")
+        if next_action == "N/A":
+            next_action = section("Next action")
+        lines.append(f"| {cell(m.id)} | {cell(m.type.value)} | {cell(m.status.value)} | {cell(section('Owner'))} | {cell(related)} | {cell(branch)} / {cell(worktree)} | {cell(verification)} | {cell(blocker)} | {cell(next_action)} |")
+    return "\n".join(lines) + "\n"
+
+
+def update_indexes(root: str | Path, *, dry_run: bool = False) -> dict[str, Path]:
+    """Refresh all generated record indexes and the work board safely."""
+    root = Path(root)
+    _ensure_views_writable(root)
+    candidates: list[RecordCandidate] = []
+    for path in _record_files(root):
+        try:
+            metadata, body = parse_frontmatter(path.read_text(encoding="utf-8"))
+        except (OSError, FrontmatterError):
+            continue
+        if metadata.type in _INDEXES:
+            candidates.append(RecordCandidate(path, metadata, body))
+    result: dict[str, Path] = {}
+    for kind, index in _INDEXES.items():
+        selected = [c for c in candidates if c.metadata.type is kind]
+        marker = f"{kind.value}-index"
+        content = _directory_index(selected, root / index, marker, f"{kind.value.title()} index")
+        _view_write(root / index, content, marker, dry_run=dry_run)
+        result[kind.value] = root / index
+    board = root / "docs/work/BOARD.md"
+    _view_write(board, _board_content(candidates), "board", dry_run=dry_run)
+    result["board"] = board
+    return result
+
+
+def append_activity(root: str | Path, actor: str, action: str, record_id: str, git_ref: str, result: str) -> Path:
+    """Append one fixed-format governance event to ACTIVITY.md."""
+    fields = (actor, action, record_id, git_ref, result)
+    if any("|" in value or "\n" in value or "\r" in value for value in fields):
+        raise ValueError("activity fields must not contain pipe or newline characters")
+    path = Path(root) / "docs/activity/ACTIVITY.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists() and "<!-- PGK_GENERATED: activity -->" not in path.read_text(encoding="utf-8"):
+        raise FileExistsError(f"refusing to overwrite project-owned view: {path}")
+    if not path.exists():
+        path.write_text("<!-- PGK_GENERATED: activity -->\n# Activity\n\n<!-- timestamp | actor | action | record_id | git_ref | result -->\n", encoding="utf-8")
+    timestamp = datetime.now().astimezone().isoformat(timespec="seconds")
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write(f"{timestamp} | {actor} | {action} | {record_id} | {git_ref} | {result}\n")
+    return path

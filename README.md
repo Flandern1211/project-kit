@@ -38,6 +38,12 @@ pgk init --root . --project-name MyProject
 pgk check --root .
 ```
 
+推荐的 Agent 首轮流程是读取 `AGENTS.md`、`docs/INDEX.md` 和
+`docs/STATUS.md`，再用 `pgk doctor --root . --json` 检查状态；需求确认后，
+按 REQ → DES/ADR → TASK → REVIEW → VER 链路创建记录，并在交接前运行
+`pgk check` 和 `pgk handoff`。`git init`、commit、push、Issue/PR、merge、
+tag、release 和删除等受保护动作始终需要用户明确确认，Kit 不会自动执行。
+
 在已有项目中，先用只读命令查看接入情况：
 
 ```powershell
@@ -53,7 +59,7 @@ pgk handoff TASK-001 --root . --next-action "run integration tests" --verificati
 pgk check --root . --json
 ```
 
-`pgk new` 也支持 `requirement`、`design`、`decision`、`bug` 和
+`pgk new` 也支持 `requirement`、`design`、`decision`、`task`、`bug`、`review` 和
 `verification`。写入命令支持 `--dry-run`，面向 Agent 的调用可使用 `--json`。
 完整参数、状态和协作流程见[使用说明](docs/usage.md)。
 

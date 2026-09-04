@@ -1,11 +1,13 @@
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from project_governance.cli import main
 from project_governance.records import create_record
 from project_governance.scaffold import init_project
+from project_governance.cli import _check_payload
 
 
 def test_cli_init_doctor_and_check_support_json_without_mutating_doctor(tmp_path: Path, capsys):
@@ -19,6 +21,7 @@ def test_cli_init_doctor_and_check_support_json_without_mutating_doctor(tmp_path
 
     assert doctor["checks"]["ok"] is True
     assert doctor["git"]["branch"]
+    assert "worktrees" in doctor["git"]
     assert before == after
     assert main(["check", "--root", str(tmp_path), "--json"]) == 0
     assert json.loads(capsys.readouterr().out)["ok"] is True
@@ -62,3 +65,73 @@ def test_check_does_not_report_generated_cache_documents(tmp_path: Path, capsys)
     result = json.loads(capsys.readouterr().out)
     assert not any(path.startswith(".pytest_cache/") for path in result["checked_files"])
     assert not any(path.startswith(".pytest-tmp-worker/") for path in result["checked_files"])
+
+
+def test_cli_new_supports_review_record(tmp_path: Path, capsys):
+    assert main(["init", "--root", str(tmp_path)]) == 0
+    capsys.readouterr()
+    assert main(["new", "review", "REVIEW-001", "Baseline review", "--root", str(tmp_path), "--json"]) == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result["id"] == "REVIEW-001"
+    assert result["path"] == "docs/reviews/REVIEW-001-baseline-review.md"
+
+
+def test_cli_index_json_refreshes_all_generated_views(tmp_path: Path, capsys):
+    assert main(["init", "--root", str(tmp_path)]) == 0
+    capsys.readouterr()
+    assert main(["index", "--root", str(tmp_path), "--json"]) == 0
+    result = json.loads(capsys.readouterr().out)
+    assert set(result["paths"]) == {
+        "docs/requirements/INDEX.md", "docs/design/INDEX.md", "docs/decisions/INDEX.md",
+        "docs/work/tasks/INDEX.md", "docs/work/bugs/INDEX.md", "docs/reviews/INDEX.md",
+        "docs/verification/INDEX.md", "docs/work/BOARD.md", "docs/work/INDEX.md",
+    }
+
+
+def test_cli_check_and_doctor_json_include_governance_and_authorization(tmp_path: Path, capsys):
+    assert main(["init", "--root", str(tmp_path)]) == 0
+    capsys.readouterr()
+    assert main(["check", "--root", str(tmp_path), "--json"]) == 0
+    checked = json.loads(capsys.readouterr().out)
+    assert checked["governance"]["ok"] is True
+    assert "authorization" in checked
+    assert main(["doctor", "--root", str(tmp_path), "--json"]) == 0
+    doctor = json.loads(capsys.readouterr().out)
+    assert doctor["governance"]["ok"] is True
+    assert "authorization" in doctor
+
+
+def test_cli_handoff_dry_run_reports_preview_without_writing(tmp_path: Path, capsys):
+    assert main(["init", "--root", str(tmp_path)]) == 0
+    capsys.readouterr()
+    assert main(["new", "task", "TASK-301", "Preview", "--root", str(tmp_path)]) == 0
+    capsys.readouterr()
+    record = next((tmp_path / "docs/work/tasks").glob("TASK-301-*.md"))
+    before = record.read_text(encoding="utf-8")
+    assert main(["handoff", "TASK-301", "--root", str(tmp_path), "--next-action", "review", "--dry-run", "--json"]) == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result["dry_run"] is True
+    assert "Current work:" in result["preview"]
+    assert record.read_text(encoding="utf-8") == before
+
+
+def test_cli_doctor_json_keeps_git_available_shape(tmp_path: Path, capsys):
+    assert main(["init", "--root", str(tmp_path), "--json"]) == 0
+    capsys.readouterr()
+    assert main(["doctor", "--root", str(tmp_path), "--json"]) == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result["git"]["available"] is False
+    assert {"branch", "head", "dirty", "recent_commits"} <= set(result["git"])
+
+
+def test_check_payload_does_not_classify_unrelated_code_as_authorization():
+    result = SimpleNamespace(
+        as_dict=lambda: {
+            "ok": False,
+            "issues": [{"code": "not_authorization", "path": "x", "message": "x"}],
+            "checked_files": [],
+        }
+    )
+    payload = _check_payload(result)
+    assert payload["authorization"]["issues"] == []
+    assert payload["governance"]["issues"][0]["code"] == "not_authorization"

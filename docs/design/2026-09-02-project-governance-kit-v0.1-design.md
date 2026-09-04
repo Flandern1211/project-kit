@@ -1,16 +1,20 @@
 ---
 id: DES-001
 type: design
-status: accepted
+status: draft
 created: 2026-09-02
-updated: 2026-09-02
+updated: 2026-09-03
 related:
   - REQ-001
 ---
 
 # Project Governance Kit v0.1 Design
 
-- Status: accepted for initial implementation
+> This design predates the accepted requirements revision of 2026-09-03 and
+> must be revised before implementation. It is retained as historical design
+> material, not as the current implementation contract.
+
+- Status: historical draft; revision required against the accepted 2026-09-03 requirements
 - Version: 0.1
 - Date: 2026-09-02
 - Requirement: [v0.1 requirements](../requirements/2026-09-02-project-governance-kit-v0.1-requirements.md)

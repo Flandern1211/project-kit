@@ -53,6 +53,24 @@ None.
 
 Review the usage guide and begin the first external TouzhiAgent trial.
 
+## Owner
+
+root
+
+## Files
+
+- `README.md`;
+- `README.en.md`;
+- `docs/usage.md`;
+- `docs/INDEX.md`.
+
+## Git
+
+branch: codex/bootstrap-v0.1
+worktree: repository checkout
+base_commit: N/A
+head_commit: d823f19ed660e95fbb946045bfc2fe836fd43caf
+
 ## Handoff
 
 <!-- PGK_HANDOFF_START -->
@@ -60,6 +78,8 @@ Status: verified
 Branch: codex/bootstrap-v0.1
 HEAD: d823f19ed660e95fbb946045bfc2fe836fd43caf
 Worktree: dirty
+Dirty: true
+Uncommitted: present
 Verification: 20 tests passed; pgk check ok; document validator 0 errors
 Blockers: none
 Next action: review the usage guide and begin the TouzhiAgent trial

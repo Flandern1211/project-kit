@@ -10,10 +10,18 @@ related:
 
 # Bootstrap verification
 
+## Owner
+
+root
+
 ## Scope
 
 Verify that the toolkit can validate its own governance documents and that the
 v0.1 CLI behavior is covered by automated tests.
+
+## Acceptance
+
+The bootstrap governance checks and CLI tests pass for the original baseline.
 
 ## Evidence
 
@@ -28,6 +36,14 @@ v0.1 CLI behavior is covered by automated tests.
 - `.venv\Scripts\pgk.exe adopt --root C:\Users\31800\Documents\ChatGPT\TouzhiAgent --json`
   — reported 3 existing governance files, 4 legacy mappings, and 7 missing
   standard files; no external project files were modified.
+
+## Blockers
+
+none
+
+## Next action
+
+Use VER-001 for the current v0.1 baseline acceptance.
 
 ## Unverified boundaries
 

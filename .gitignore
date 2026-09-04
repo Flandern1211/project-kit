@@ -9,4 +9,5 @@ htmlcov/
 .ruff_cache/
 .worktrees/
 .superpowers/
+.agent/
 .project-governance.local.toml

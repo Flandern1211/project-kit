@@ -13,18 +13,22 @@ second copy of the documents it links to.
 ## Requirements
 
 - [Project Governance Kit v0.1 requirements (English)](requirements/2026-09-02-project-governance-kit-v0.1-requirements.md)
-- [Project Governance Kit v0.1 需求规格（中文）](requirements/2026-09-02-project-governance-kit-v0.1-requirements.zh-CN.md)
+- [Project Governance Kit v0.1 需求规格（中文，权威基线）](requirements/2026-09-02-project-governance-kit-v0.1-requirements.zh-CN.md)
 
 ## Design
 
-- [Project Governance Kit v0.1 design](design/2026-09-02-project-governance-kit-v0.1-design.md)
+- [Project Governance Kit v0.1 技术设计（中文，已确认）](design/2026-09-04-project-governance-kit-v0.1-design.zh-CN.md)
+- [Project Governance Kit v0.1 design（历史草案）](design/2026-09-02-project-governance-kit-v0.1-design.md)
 - [ADR-0001: repository Markdown is the durable task record](decisions/ADR-0001-repository-markdown-task-record.md)
 
 ## Work and verification
 
 - [Work index](work/INDEX.md)
 - [Verification index](verification/INDEX.md)
+- [VER-001: v0.1 new-project baseline verification](verification/VER-001-v0-1-new-project-baseline.md)
+- [TASK-005: v0.1 new-project governance baseline](work/tasks/TASK-005-implement-v0-1-new-project-governance-baseline.md)
 - [v0.1 implementation plan](superpowers/plans/2026-09-02-project-governance-kit-v0.1-implementation.md)
+- [v0.1 baseline implementation plan](superpowers/plans/2026-09-04-project-governance-kit-v0.1-baseline-implementation.md)
 
 ## External trial
 

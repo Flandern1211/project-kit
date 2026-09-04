@@ -50,6 +50,21 @@ writes without changing files:
 pgk init --root . --dry-run --json
 ```
 
+新项目的 Agent 首轮可直接复制以下流程：
+
+```powershell
+Get-Content AGENTS.md
+Get-Content docs/INDEX.md
+Get-Content docs/STATUS.md
+pgk doctor --root . --json
+pgk new requirement REQ-001 "Discuss project requirements" --root .
+```
+
+只有用户确认需求后才继续创建 DES/ADR、TASK、REVIEW 和 VER；暂停或交接前运行
+`pgk check --root . --json` 与 `pgk handoff ...`。`git init`、commit、push、
+Issue/PR、merge、tag、release 和删除属于受保护动作，仍需用户逐项确认，`pgk`
+不会自动执行这些动作。
+
 ## 3. 接入已有项目 / Existing project
 
 已有项目先执行只读检查，不要直接初始化：
@@ -98,7 +113,7 @@ pgk new verification VER-001 "Verify the first feature" --root .
 statuses are:
 
 ```text
-draft, accepted, in_progress, blocked, verified, done, rejected
+draft, accepted, in_progress, in_review, blocked, verified, done, rejected, superseded
 ```
 
 预览记录路径而不写文件：

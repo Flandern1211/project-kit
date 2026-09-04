@@ -40,6 +40,36 @@ architecture that it will later provide to other projects.
 - a verification record cites the commands and results;
 - no secrets or project-specific business rules are included.
 
+## Owner
+
+root
+
+## Files
+
+- repository governance documents;
+- `src/project_governance/`;
+- `tests/`.
+
+## Evidence
+
+See [VER-000](../../verification/VER-000-bootstrap.md) for the bootstrap
+evidence and its unverified boundaries.
+
+## Blockers
+
+none
+
+## Next action
+
+review the current v0.1 baseline evidence
+
+## Git
+
+branch: codex/bootstrap-v0.1
+worktree: repository checkout
+base_commit: N/A
+head_commit: 799a3eaba69f5080940d28c3106fb61726288e50
+
 ## Task 5 self-validation
 
 - `pgk check --root . --json` returned `ok=true` with no issues;
@@ -56,6 +86,8 @@ Status: verified
 Branch: codex/bootstrap-v0.1
 HEAD: 799a3eaba69f5080940d28c3106fb61726288e50
 Worktree: dirty
+Dirty: true
+Uncommitted: present
 Verification: 20 tests passed; pgk check ok; document validator 0 errors
 Blockers: none
 Next action: review and approve the first TouzhiAgent external trial

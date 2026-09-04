@@ -31,6 +31,12 @@ def test_create_record_writes_metadata_body_and_rejects_duplicate_id(tmp_path: P
         create_record(tmp_path, "task", "TASK-001", "Another title")
 
 
+def test_related_id_cannot_inject_malformed_frontmatter(tmp_path: Path):
+    init_project(tmp_path)
+    with pytest.raises(ValueError, match="related ids"):
+        create_record(tmp_path, "task", "TASK-009", "Unsafe relation", related=["REQ-001\nstatus: accepted"])
+
+
 def test_update_work_index_is_deterministic_and_does_not_duplicate_records(tmp_path: Path):
     init_project(tmp_path, project_name="Example")
     create_record(tmp_path, "task", "TASK-002", "Second task")
@@ -44,3 +50,50 @@ def test_update_work_index_is_deterministic_and_does_not_duplicate_records(tmp_p
     assert "## Active\n\n- [TASK-002]" in content
     assert "## Bugs\n\n- [BUG-001]" in content
     assert run_checks(tmp_path).ok
+
+
+def test_create_record_rejects_unmarked_legacy_work_index_before_writing(tmp_path: Path):
+    init_project(tmp_path, project_name="Example")
+    work_index = tmp_path / "docs/work/INDEX.md"
+    work_index.write_text("# project-owned work index\n", encoding="utf-8")
+
+    with pytest.raises(FileExistsError, match="INDEX[.]md"):
+        create_record(tmp_path, "task", "TASK-003", "Blocked write")
+
+    assert not list((tmp_path / "docs/work/tasks").glob("TASK-003-*.md"))
+
+
+def test_create_record_appends_activity_but_dry_run_does_not(tmp_path: Path):
+    init_project(tmp_path, project_name="Example")
+    activity = tmp_path / "docs/activity/ACTIVITY.md"
+    before = activity.read_text(encoding="utf-8").splitlines()
+
+    create_record(tmp_path, "task", "TASK-003", "Activity task")
+    lines = activity.read_text(encoding="utf-8").splitlines()
+    created = [line for line in lines if " | create | TASK-003 | " in line]
+    assert len(created) == 1
+    assert len(created[0].split(" | ")) == 6
+
+    dry_root = tmp_path / "dry-run"
+    dry_root.mkdir()
+    init_project(dry_root, project_name="Dry run")
+    dry_activity = dry_root / "docs/activity/ACTIVITY.md"
+    dry_before = dry_activity.read_text(encoding="utf-8")
+    create_record(dry_root, "task", "TASK-004", "Dry activity task", dry_run=True)
+    assert dry_activity.read_text(encoding="utf-8") == dry_before
+
+
+def test_create_record_refreshes_legacy_work_index_without_dry_run_mutation(tmp_path: Path):
+    init_project(tmp_path, project_name="Example")
+    work_index = tmp_path / "docs/work/INDEX.md"
+    before = work_index.read_text(encoding="utf-8")
+    create_record(tmp_path, "task", "TASK-005", "Indexed task")
+    assert "[TASK-005]" in work_index.read_text(encoding="utf-8")
+
+    dry_root = tmp_path / "dry-index"
+    dry_root.mkdir()
+    init_project(dry_root, project_name="Dry index")
+    dry_index = dry_root / "docs/work/INDEX.md"
+    dry_before = dry_index.read_text(encoding="utf-8")
+    create_record(dry_root, "task", "TASK-006", "Preview task", dry_run=True)
+    assert dry_index.read_text(encoding="utf-8") == dry_before
