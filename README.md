@@ -38,6 +38,15 @@ pgk init --root . --project-name MyProject
 pgk check --root .
 ```
 
+初始化支持 `lite`、`standard`、`strict` 三档治理 profile；v0.1 协作模式支持
+`single-agent` 和 `sequential-agents`：
+
+```powershell
+pgk init --root . --profile lite
+pgk init --root . --profile standard --collaboration-mode sequential-agents
+pgk init --root . --profile strict
+```
+
 推荐的 Agent 首轮流程是读取 `AGENTS.md`、`docs/INDEX.md` 和
 `docs/STATUS.md`，再用 `pgk doctor --root . --json` 检查状态；需求确认后，
 按 REQ → DES/ADR → TASK → REVIEW → VER 链路创建记录，并在交接前运行

@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Iterable, Sequence
 
 from .frontmatter import FrontmatterError, parse_frontmatter
+from .config import load_config, record_type_enabled
 from .models import RecordMetadata, RecordType, Status
 from .templates import render_template
 
@@ -84,6 +85,9 @@ def create_record(
     if not root.exists() or not root.is_dir():
         raise ValueError(f"project root does not exist: {root}")
     record_type = _kind(kind)
+    profile = load_config(root / ".project-governance.toml").profile
+    if not record_type_enabled(profile, record_type.value):
+        raise ValueError(f"{profile} profile does not enable {record_type.value}")
     if not record_id.startswith(RECORD_PREFIXES[record_type]):
         raise ValueError(f"record id prefix does not match type: {record_type.value}")
     if not RECORD_ID_PATTERN.fullmatch(record_id):
@@ -183,9 +187,16 @@ _INDEXES = {
 }
 
 
+def _indexes_for_project(root: Path) -> dict[RecordType, Path]:
+    profile = load_config(root / ".project-governance.toml").profile
+    if profile == "lite":
+        return {kind: path for kind, path in _INDEXES.items() if kind in {RecordType.REQUIREMENT, RecordType.TASK, RecordType.BUG, RecordType.VERIFICATION}}
+    return dict(_INDEXES)
+
+
 def _ensure_views_writable(root: Path) -> None:
     """Fail before record creation if any generated view is project-owned."""
-    views = [(root / path, f"{kind.value}-index") for kind, path in _INDEXES.items()]
+    views = [(root / path, f"{kind.value}-index") for kind, path in _indexes_for_project(root).items()]
     views.append((root / "docs/work/INDEX.md", "work-index"))
     views.append((root / "docs/work/BOARD.md", "board"))
     views.append((root / "docs/activity/ACTIVITY.md", "activity"))
@@ -265,7 +276,7 @@ def update_indexes(root: str | Path, *, dry_run: bool = False) -> dict[str, Path
         if metadata.type in _INDEXES:
             candidates.append(RecordCandidate(path, metadata, body))
     result: dict[str, Path] = {}
-    for kind, index in _INDEXES.items():
+    for kind, index in _indexes_for_project(root).items():
         selected = [c for c in candidates if c.metadata.type is kind]
         marker = f"{kind.value}-index"
         content = _directory_index(selected, root / index, marker, f"{kind.value.title()} index")

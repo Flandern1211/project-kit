@@ -40,6 +40,7 @@ def _parser() -> argparse.ArgumentParser:
     init.add_argument("--root", default=".")
     init.add_argument("--project-name")
     init.add_argument("--profile", default="standard")
+    init.add_argument("--collaboration-mode", default="single-agent")
     init.add_argument("--dry-run", action="store_true")
     init.add_argument("--json", action="store_true")
 
@@ -142,7 +143,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     root = _root(args.root)
     try:
         if args.command == "init":
-            result = init_project(root, project_name=args.project_name, profile=args.profile, dry_run=args.dry_run)
+            result = init_project(root, project_name=args.project_name, profile=args.profile, collaboration_mode=args.collaboration_mode, dry_run=args.dry_run)
             _emit(result.as_dict(), as_json=args.json)
             return 0
         if args.command == "adopt":

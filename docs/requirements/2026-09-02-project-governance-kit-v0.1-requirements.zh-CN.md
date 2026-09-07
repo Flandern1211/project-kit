@@ -3,7 +3,7 @@ id: REQ-001-ZH
 type: requirement
 status: accepted
 created: 2026-09-02
-updated: 2026-09-03
+updated: 2026-09-07
 related:
   - REQ-001
 ---
@@ -14,7 +14,7 @@ related:
 
 - 文档状态：已确认
 - Kit 版本：0.1
-- 修订日期：2026-09-03
+- 修订日期：2026-09-07
 
 ## 1. 产品目标
 
@@ -47,12 +47,28 @@ v0.1 使用 Git 可追踪的 Markdown 表格、索引和 Mermaid 图展示项目
 ### 2.4 Git 协同
 
 项目必须使用 Git 保存代码和治理文档。一个可实施任务默认对应一个任务分支；
-并行 Agent 默认使用独立 worktree，并在任务记录中登记分支、worktree、负责人
-和文件范围。
+v0.1 先支持单 Agent 和不同会话的顺序交接。并行 Agent、worktree 协调、文件
+范围锁定和自动合并属于后续扩展，不纳入 v0.1 核心验收。
+
+### 2.5 治理等级与协作模式修订（2026-09-07）
+
+- 治理等级分为 Lite、Standard、Strict，表示文档和检查深度，不表示运行或集成
+  功能的多少；
+- Agent 协作模式与治理等级分离，分为 `single-agent`、`sequential-agents` 和
+  `parallel-agents`；
+- v0.1 只实现 `single-agent` 和 `sequential-agents`；
+- GitHub/Issue、Web 后台、模型调用、自动 commit/push/PR/release 等均为后续
+  可选扩展；
+- Agent 可以提出治理等级或模块调整，但不能静默修改；治理变更必须有提案、
+  影响分析、用户确认和历史保留；
+- 本节由 [ADR-0002](../decisions/ADR-0002-governance-profiles-and-v0-1-scope.md)
+  记录，优先于旧版并行协作表述。
 
 ## 3. 初始化产物
 
-在新项目根目录执行初始化后，Kit 至少创建以下文件和目录。目录可以只有索引或
+在新项目根目录执行初始化后，Kit 按治理等级创建文件和目录。以下结构是
+Standard 基线；Lite 可以只创建核心入口、需求、任务和验证目录，Strict 在此
+基础上启用风险、安全、发布和事故记录。目录可以只有索引或
 占位内容，但不能因为 Git 不保存空目录而消失：
 
 ```text
@@ -197,9 +213,10 @@ Kit 通过项目内 `AGENTS.md`、模板、状态约束和 `pgk check` 提供规
 - 任务确认后，Agent 可以创建并登记本地任务分支；
 - 默认分支命名为 `task/<TASK-ID>-<slug>`，Bug 分支命名为 `bug/<BUG-ID>-<slug>`，
   具体前缀可在项目配置中调整；
-- 并行 Agent 使用独立 worktree，默认目录为项目 `.worktrees/` 下的任务目录；
-- 单 Agent 串行开发可以使用任务分支，不强制额外 worktree；
-- 任务记录必须登记 `branch`、`worktree`、`owner`、`files`；文件范围冲突时必须报告并停止；
+- v0.1 单 Agent 串行开发使用任务分支，不要求额外 worktree；并行 Agent 的独立
+  worktree、文件范围锁定和冲突协调属于后续扩展；
+- 任务记录必须登记适用的 `branch`、`owner`、`files`；`worktree` 字段为未来并行
+  扩展预留；
 - 非实施类记录的 branch/worktree/HEAD 可以填 `N/A` 或继承上游引用，不要求虚构 Git 绑定。
 
 ### 6.2 受保护动作授权
@@ -241,8 +258,8 @@ Kit 通过项目内 `AGENTS.md`、模板、状态约束和 `pgk check` 提供规
 - 记录状态：至少支持 `draft`、`accepted`、`in_progress`、`in_review`、`blocked`、
   `verified`、`done`、`rejected`、`superseded`；不同记录类型可以限制可用子集。
 
-项目可以同时存在多个任务、Bug 和 worktree；`STATUS.md` 只描述全局阶段和当前重点，
-`BOARD.md` 展示全部记录。
+未来并行模式可以同时存在多个任务、Bug 和 worktree；v0.1 以单 Agent 顺序工作为主。
+`STATUS.md` 只描述全局阶段和当前重点，`BOARD.md` 展示全部记录。
 
 ### 7.1 可视化最小合同
 
@@ -280,8 +297,8 @@ Kit 应提供需求、设计、决策、任务、Bug、Review、验证和重要�
 
 ### FR-05 Git 协同
 
-Kit 应记录任务与分支、worktree、提交、Review、合并和公开动作证据之间的关系，并能
-报告脏工作区、未登记分支、文件范围冲突或缺少关联记录。
+Kit 应记录任务与分支、提交、Review 和公开动作证据之间的关系，并能报告脏工作区、
+未登记分支或缺少关联记录。worktree、文件范围冲突和合并关系为并行 Agent 扩展预留。
 
 ### FR-06 用户授权门禁
 
@@ -316,7 +333,8 @@ Kit 应提供可被 Agent 集成执行的授权规则和检查结果：无匹配
 - AC-06：用户和 Agent 可以创建 REQ、DES、ADR、TASK、BUG、REVIEW 和 VER 记录，并保持关联；
 - AC-07：Agent 在开始实现前能检查上游记录和状态，缺少确认时会停止并记录 blocker；
 - AC-08：STATUS、BOARD、WORKFLOW 和 ACTIVITY 按第 7.1 节最小合同展示节点和状态；
-- AC-09：任务与 Git 分支/worktree/提交关系可追踪，文件范围冲突可以被发现；
+- AC-09：v0.1 中任务与 Git 分支/提交关系可追踪；worktree 和文件范围冲突检查
+  作为并行 Agent 扩展预留，不作为 v0.1 核心验收；
 - AC-10：没有匹配用户授权时，Agent 集成不执行 commit、push、Issue/PR、merge、tag、
   release 或删除操作；核心 CLI 不执行这些动作；
 - AC-11：任务交接记录足以让新 Agent 在没有前一轮聊天记录的情况下继续工作；
@@ -330,7 +348,11 @@ Kit 应提供可被 Agent 集成执行的授权规则和检查结果：无匹配
 - 可视化只使用 Git 可追踪的 Markdown、索引和 Mermaid，不做 Web 后台；
 - `pgk init` 默认只创建文件，不执行 `git init`、commit、push、merge 或远程操作；
 - 无 Git 时必须先获得用户确认，Agent 才能执行 `git init`；
-- 任务确认后可以创建本地分支，只有并行开发才默认创建独立 worktree；
+- 任务确认后可以创建本地分支；v0.1 的单 Agent 顺序开发不要求额外 worktree，并行
+  开发和独立 worktree 协调延期；
+- 治理等级分为 Lite、Standard、Strict；协作模式独立配置，v0.1 只支持 single-agent
+  和 sequential-agents；
+- Agent 可以提出治理变更提案，但必须经用户确认后才能修改治理配置；
 - commit、push、Issue/PR、merge、tag、release 和删除默认逐次确认；明确的任务级/会话级
   授权必须包含动作、目标和期限，且不自动扩大到相邻动作；
 - 活动日志记录治理节点而不是每条命令或每段对话；

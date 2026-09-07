@@ -3,7 +3,7 @@ id: DES-002-ZH
 type: design
 status: accepted
 created: 2026-09-04
-updated: 2026-09-04
+updated: 2026-09-07
 related:
   - REQ-001-ZH
   - REQ-001
@@ -11,7 +11,7 @@ related:
 
 # Project Governance Kit v0.1 技术设计
 
-> 本文已由用户于 2026-09-04 确认，作为 v0.1 当前技术设计基线。设计不增加需求范围；如果设计与需求冲突，以需求为准。
+> 本文由用户于 2026-09-04 确认，并由 2026-09-07 的 ADR-0002 修订。设计不增加需求范围；如果设计与需求冲突，以需求为准。
 
 ## 1. 设计边界
 
@@ -20,6 +20,19 @@ Kit 为新项目生成自包含的文档、规则、索引和 Git 协作骨架�
 
 v0.1 使用 Python 3.11+ 标准库。核心 CLI 只负责本地文件和只读 Git 查询，不执行
 `git init`、commit、push、merge、tag、release、删除或任何远程 API，也不调用模型。
+
+### 1.1 治理等级与协作模式（2026-09-07 修订）
+
+- 治理等级为 Lite、Standard、Strict，只控制文档和检查深度；
+- 协作模式独立于治理等级，分为 `single-agent`、`sequential-agents` 和
+  `parallel-agents`；
+- v0.1 只实现单 Agent 和跨会话顺序交接；并行 Agent、worktree 协调、文件范围
+  锁定和自动合并延期；
+- Agent 可以生成治理变更提案，但治理配置只有在用户确认后才能修改；
+- GitHub/Issue、Web、模型调用和自动公开操作是后续可选扩展。
+
+本节由 [ADR-0002](../decisions/ADR-0002-governance-profiles-and-v0-1-scope.md)
+记录，优先于旧版并行协作表述。
 
 ## 2. 初始化流程
 
@@ -127,9 +140,10 @@ Kit 通过生成的 `AGENTS.md`、模板和 `pgk check` 提供规则与违规报
 
 ## 6. Git 协同与授权
 
-单 Agent 使用 `task/<TASK-ID>-<slug>` 或 `bug/<BUG-ID>-<slug>` 分支；并行 Agent 使用
-`.worktrees/<TASK-ID>` 或 `.worktrees/<BUG-ID>`。任务记录 `branch`、`worktree`、
-`owner`、`files`、`base_commit` 和 `head_commit`；活动文件范围重叠时必须停止并报告。
+单 Agent 使用 `task/<TASK-ID>-<slug>` 或 `bug/<BUG-ID>-<slug>` 分支；v0.1 不要求额外
+worktree。并行 Agent 使用 `.worktrees/<TASK-ID>` 或 `.worktrees/<BUG-ID>`、文件范围
+冲突检查和自动协调均为后续扩展。任务记录仍可预留 `branch`、`worktree`、`owner`、
+`files`、`base_commit` 和 `head_commit` 字段。
 
 以下动作默认逐次需要用户明确确认：commit、push、Issue 创建/更新/关闭/回复、PR/MR
 创建/更新/关闭/回复、merge、tag、release/公开发布以及删除分支或 worktree。
@@ -158,9 +172,15 @@ Kit 生成的视图使用 `<!-- PGK_GENERATED: ... -->` 标记；只有带标记
 `handoff` 交接、`cli` 命令分发。
 
 验证覆盖：空新项目、已有 Git、无 Git 且拒绝初始化、已有文件保护、七类记录生成、
-需求未确认门禁、Review/Verification 记录、授权过期/撤销/动作不匹配、文件范围冲突、
-脏工作区和 `--json`/`--dry-run` 输出。核心 CLI 不执行受保护动作的验证以源码和命令
+需求未确认门禁、Review/Verification 记录、授权过期/撤销/动作不匹配、脏工作区和
+`--json`/`--dry-run` 输出。并行 Agent 文件范围冲突属于后续扩展。核心 CLI 不执行受保护动作的验证以源码和命令
 接口审查为依据；真实 Agent 是否遵守规则必须通过集成试验验证。
+
+### 8.1 v0.1 实现边界
+
+v0.1 的核心是初始化、文档链、状态/索引、任务和验证记录、跨会话交接以及用户授权
+边界。多 Agent 并行调度、远程平台、Web 管理后台、模型调用和自动公开操作不属于
+本版实现目标；治理等级的完整自动评估也延后，Agent 只需能够读取配置并提出变更提案。
 
 ## 9. 需求覆盖
 

@@ -9,19 +9,22 @@ current_requirement: REQ-001-ZH
 current_design: DES-002-ZH
 current_task: none
 owner: root
-blocker: expected dirty worktree before user-authorized commit
-next_action: review the v0.1 baseline and decide whether to authorize a commit
+blocker: existing dirty worktrees and unregistered task branch require separate review; protected Git actions still require user approval
+next_action: review TASK-007 profile implementation; create a new task for further scope
 git_state: git_initialized
-updated: 2026-09-04
+updated: 2026-09-07
 ```
 
 ## Current scope
 
-The v0.1 requirements and DES-002-ZH technical design baselines are accepted.
-Implementation now covers the new-project initialization skeleton, document
-chain, Markdown/Mermaid views, Git collaboration records, authorization gates,
-and fixture-based acceptance. Protected Git and remote actions still require
-explicit user approval.
+The v0.1 requirements and DES-002-ZH technical design baselines remain accepted,
+with the 2026-09-07 governance profile and scope revision recorded by ADR-0002.
+The revision makes single-Agent and sequential handoff the v0.1 collaboration
+core; parallel Agent coordination and external integrations are deferred.
+The existing implementation baseline is unchanged by this documentation task.
+The newly accepted Lite/Standard/Strict profile behavior and collaboration-mode
+configuration are documented scope, not yet claimed as implemented runtime behavior.
+Protected Git and remote actions still require explicit user approval.
 
 ## Known constraints
 
@@ -33,14 +36,17 @@ explicit user approval.
 ## Verification snapshot
 
 - clean fresh-project fixture `pgk check --root <fixture-copy> --json`: `ok=true`, no issues;
-- current working checkout `pgk check --root . --json`: reports only the expected dirty-worktree state before commit;
+- current working checkout `pgk check` reports only existing dirty-worktree and
+  user-owned unregistered-branch state;
 - editable package installation and `pgk --help`: passed;
 - empty-project `pgk init`, `pgk check`, and `pgk new --dry-run`: passed;
 - TouzhiAgent `pgk adopt`: read-only mapping report produced, no files changed;
 - 86-test suite, compile check, project-document validator, and fresh-project
   acceptance fixture: passed; see [VER-001](verification/VER-001-v0-1-new-project-baseline.md).
+- current profile implementation regression suite: 92 tests passed; compileall and
+  diff-check passed. `pgk check` still reports only existing Git-state issues.
 
 ## Next action
 
-TASK-005 is verified. The next action is to create a separately accepted task
-for any follow-up scope; do not infer business requirements from the fixture.
+TASK-007 profile implementation is verified. Parallel coordination, automatic
+profile assessment, and external integrations remain deferred.
