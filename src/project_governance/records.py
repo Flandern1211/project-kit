@@ -23,6 +23,15 @@ RECORD_DIRECTORIES = {
     RecordType.REVIEW: Path("docs/reviews"),
     RecordType.VERIFICATION: Path("docs/verification"),
 }
+
+
+def _governance_root(root: Path) -> Path:
+    return Path(load_config(root / ".project-governance.toml").governance_dir)
+
+
+def _record_directories(root: Path) -> dict[RecordType, Path]:
+    base = _governance_root(root)
+    return {kind: base / path.relative_to(Path("docs")) for kind, path in RECORD_DIRECTORIES.items()}
 RECORD_ID_PATTERN = re.compile(r"^(?:REQ|DES|ADR|PLAN|TASK|BUG|REVIEW|VER|INC)-[A-Za-z0-9][A-Za-z0-9._-]*$")
 RECORD_PREFIXES = {RecordType.REQUIREMENT: "REQ-", RecordType.DESIGN: "DES-", RecordType.DECISION: "ADR-", RecordType.TASK: "TASK-", RecordType.BUG: "BUG-", RecordType.REVIEW: "REVIEW-", RecordType.VERIFICATION: "VER-"}
 
@@ -40,7 +49,8 @@ class RecordCandidate:
 
 def _record_files(root: Path) -> Iterable[Path]:
     ignored = {".git", ".agent", ".venv", ".worktrees", ".superpowers", ".pytest_cache"}
-    for path in sorted(root.rglob("*.md")):
+    base = root / _governance_root(root)
+    for path in sorted(base.rglob("*.md")):
         if not any(part in ignored or part.startswith(".pytest-tmp") for part in path.relative_to(root).parts):
             yield path
 
@@ -108,7 +118,7 @@ def create_record(
         created or date.today(),
         list(related),
     )
-    path = root / RECORD_DIRECTORIES[record_type] / f"{record_id}-{_slug(title)}.md"
+    path = root / _record_directories(root)[record_type] / f"{record_id}-{_slug(title)}.md"
     if path.exists():
         raise DuplicateRecordError(f"record path already exists: {path.relative_to(root).as_posix()}")
     if not dry_run:
@@ -153,7 +163,7 @@ def update_work_index(root: str | Path, *, dry_run: bool = False) -> Path:
     """Render the task/bug index; overwrite only a PGK-generated index."""
 
     root = Path(root)
-    index = root / "docs/work/INDEX.md"
+    index = root / _record_directories(root)[RecordType.TASK].parent / "INDEX.md"
     candidates: list[RecordCandidate] = []
     for path in _record_files(root):
         if path == index:
@@ -189,17 +199,20 @@ _INDEXES = {
 
 def _indexes_for_project(root: Path) -> dict[RecordType, Path]:
     profile = load_config(root / ".project-governance.toml").profile
+    directories = _record_directories(root)
+    indexes = {kind: path / "INDEX.md" for kind, path in directories.items()}
     if profile == "lite":
-        return {kind: path for kind, path in _INDEXES.items() if kind in {RecordType.REQUIREMENT, RecordType.TASK, RecordType.BUG, RecordType.VERIFICATION}}
-    return dict(_INDEXES)
+        return {kind: path for kind, path in indexes.items() if kind in {RecordType.REQUIREMENT, RecordType.TASK, RecordType.BUG, RecordType.VERIFICATION}}
+    return indexes
 
 
 def _ensure_views_writable(root: Path) -> None:
     """Fail before record creation if any generated view is project-owned."""
     views = [(root / path, f"{kind.value}-index") for kind, path in _indexes_for_project(root).items()]
-    views.append((root / "docs/work/INDEX.md", "work-index"))
-    views.append((root / "docs/work/BOARD.md", "board"))
-    views.append((root / "docs/activity/ACTIVITY.md", "activity"))
+    work_root = _record_directories(root)[RecordType.TASK].parent
+    views.append((root / work_root / "INDEX.md", "work-index"))
+    views.append((root / work_root / "BOARD.md", "board"))
+    views.append((root / _governance_root(root) / "activity/ACTIVITY.md", "activity"))
     for path, marker in views:
         if path.exists() and f"<!-- PGK_GENERATED: {marker} -->" not in path.read_text(encoding="utf-8"):
             raise FileExistsError(f"refusing to overwrite project-owned view: {path}")
@@ -282,7 +295,8 @@ def update_indexes(root: str | Path, *, dry_run: bool = False) -> dict[str, Path
         content = _directory_index(selected, root / index, marker, f"{kind.value.title()} index")
         _view_write(root / index, content, marker, dry_run=dry_run)
         result[kind.value] = root / index
-    board = root / "docs/work/BOARD.md"
+    work_root = _record_directories(root)[RecordType.TASK].parent
+    board = root / work_root / "BOARD.md"
     _view_write(board, _board_content(candidates), "board", dry_run=dry_run)
     result["board"] = board
     return result
@@ -293,7 +307,7 @@ def append_activity(root: str | Path, actor: str, action: str, record_id: str, g
     fields = (actor, action, record_id, git_ref, result)
     if any("|" in value or "\n" in value or "\r" in value for value in fields):
         raise ValueError("activity fields must not contain pipe or newline characters")
-    path = Path(root) / "docs/activity/ACTIVITY.md"
+    path = Path(root) / _governance_root(Path(root)) / "activity/ACTIVITY.md"
     path.parent.mkdir(parents=True, exist_ok=True)
     if path.exists() and "<!-- PGK_GENERATED: activity -->" not in path.read_text(encoding="utf-8"):
         raise FileExistsError(f"refusing to overwrite project-owned view: {path}")

@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
-from .config import validate_collaboration_mode, validate_profile
+from .config import default_visibility_dirs, validate_collaboration_mode, validate_profile, validate_visibility, validate_visibility_dirs
 from .git_context import inspect_git
 
 _EMPTY = "# {title}\n\nNo records yet.\n"
@@ -13,7 +13,7 @@ STANDARD_FILES: dict[str, str] = {
     "CONTRIBUTING.md": "# Contributing to {project_name}\n\nStart non-trivial work from a task or bug record. Keep code, tests, documentation, and verification linked.\n",
     "CHANGELOG.md": "# Changelog\n\n## Unreleased\n\n",
     ".gitignore": "# Project Governance Kit\n__pycache__/\n*.py[cod]\n.venv/\n.agent/\n",
-    ".project-governance.toml": "kit_version = \"0.1.0\"\nschema_version = 1\nprofile = \"{profile}\"\ncollaboration_mode = \"{collaboration_mode}\"\ndocs_dir = \"docs\"\nrecords_dir = \"docs/work\"\n",
+    ".project-governance.toml": "kit_version = \"0.1.0\"\nschema_version = 1\nprofile = \"{profile}\"\ncollaboration_mode = \"{collaboration_mode}\"\nvisibility = \"{visibility}\"\ngovernance_dir = \"{governance_dir}\"\npublic_docs_dir = \"{public_docs_dir}\"\ndocs_dir = \"docs\"\nrecords_dir = \"docs/work\"\n",
     "docs/INDEX.md": "# Project documentation index\n\nRead [STATUS](STATUS.md), then the relevant requirement, design, task, review and verification records.\n",
     "docs/STATUS.md": "# Project status\n\n```yaml\nproject_stage: requirements_discussion\nprofile: {profile}\ncollaboration_mode: {collaboration_mode}\ncurrent_requirement: N/A\ncurrent_design: N/A\ncurrent_task: N/A\nowner: N/A\nblocker: none\nnext_action: discuss and record project requirements\nupdated: {date}\ngit_state: {git_state}\n```\n\nNo business requirements are created by initialization.\n",
     "docs/WORKFLOW.md": "<!-- PGK_GENERATED: workflow -->\n# Governance workflow\n\n```mermaid\nstateDiagram-v2\n[*] --> initialized\ninitialized --> requirements_discussion\nrequirements_discussion --> requirements_review\nrequirements_review --> active_development\nactive_development --> maintenance\nactive_development --> blocked\nmaintenance --> active_development\nblocked --> active_development: resolve blocker and resume\nblocked --> requirements_review: revise requirements\n```\n",
@@ -71,6 +71,28 @@ def files_for_profile(profile: str) -> dict[str, str]:
     return files
 
 
+def files_for_visibility(
+    profile: str,
+    visibility: str,
+    governance_dir: str | None = None,
+    public_docs_dir: str | None = None,
+) -> dict[str, str]:
+    visibility = validate_visibility(visibility)
+    default_governance, default_public = default_visibility_dirs(visibility)
+    governance_dir, public_docs_dir = validate_visibility_dirs(visibility, governance_dir or default_governance, public_docs_dir or default_public)
+    source = files_for_profile(profile)
+    if visibility == "public":
+        return source
+    result: dict[str, str] = {}
+    for relative, template in source.items():
+        mapped = f"{governance_dir}/{relative[5:]}" if relative.startswith("docs/") else relative
+        rendered = template.replace("docs/", f"{governance_dir}/")
+        result[mapped] = rendered
+    if visibility == "hybrid":
+        result[f"{public_docs_dir}/INDEX.md"] = "# Public documentation index\n\nPublic project documentation belongs here. Internal governance records are stored separately.\n"
+    return result
+
+
 def required_artifacts_for_profile(profile: str) -> tuple[str, ...]:
     files = files_for_profile(profile)
     baseline = {"docs/templates/INDEX.md", "docs/templates/requirement.md", "docs/templates/design.md",
@@ -88,8 +110,11 @@ class ScaffoldResult:
     errors: dict[str, str] = field(default_factory=dict)
     profile: str = "standard"
     collaboration_mode: str = "single-agent"
+    visibility: str = "public"
+    governance_dir: str = "docs"
+    public_docs_dir: str = "docs"
     def as_dict(self) -> dict[str, object]:
-        return {"created": list(self.created), "skipped": list(self.skipped), "git_state": self.git_state, "project_stage": self.project_stage, "profile": self.profile, "collaboration_mode": self.collaboration_mode, "errors": dict(self.errors or {})}
+        return {"created": list(self.created), "skipped": list(self.skipped), "git_state": self.git_state, "project_stage": self.project_stage, "profile": self.profile, "collaboration_mode": self.collaboration_mode, "visibility": self.visibility, "governance_dir": self.governance_dir, "public_docs_dir": self.public_docs_dir, "errors": dict(self.errors or {})}
 
 @dataclass(frozen=True, slots=True)
 class AdoptionReport:
@@ -99,15 +124,18 @@ class AdoptionReport:
     def as_dict(self) -> dict[str, object]:
         return {"existing": list(self.existing), "missing": list(self.missing), "mappings": [dict(item) for item in self.mappings]}
 
-def init_project(root: str | Path, *, project_name: str | None = None, profile: str = "standard", collaboration_mode: str = "single-agent", dry_run: bool = False) -> ScaffoldResult:
+def init_project(root: str | Path, *, project_name: str | None = None, profile: str = "standard", collaboration_mode: str = "single-agent", visibility: str = "public", governance_dir: str | None = None, public_docs_dir: str | None = None, dry_run: bool = False) -> ScaffoldResult:
     profile = validate_profile(profile)
     collaboration_mode = validate_collaboration_mode(collaboration_mode, v01=True)
+    visibility = validate_visibility(visibility)
+    default_governance, default_public = default_visibility_dirs(visibility)
+    governance_dir, public_docs_dir = validate_visibility_dirs(visibility, governance_dir or default_governance, public_docs_dir or default_public)
     root = Path(root)
     if not root.exists() or not root.is_dir(): raise ValueError(f"project root does not exist: {root}")
     name = (project_name or root.name).strip() or root.name
     try: inspect_git(root); git_state = "git_initialized"
     except ValueError: git_state = "git_not_initialized"
-    files = files_for_profile(profile)
+    files = files_for_visibility(profile, visibility, governance_dir, public_docs_dir)
     for relative in files:
         path = root / relative
         if path.exists() and path.is_dir():
@@ -127,12 +155,20 @@ def init_project(root: str | Path, *, project_name: str | None = None, profile: 
         if not dry_run:
             try:
                 path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_text(template.format(project_name=name, date=date.today().isoformat(), git_state=git_state, profile=profile, collaboration_mode=collaboration_mode), encoding="utf-8")
+                rendered = template
+                if relative == ".gitignore" and visibility == "hybrid":
+                    rendered += f"\n{governance_dir.rstrip('/')}/\n"
+                if relative == "README.md" and visibility != "public":
+                    landing = f"{public_docs_dir}/INDEX.md" if visibility == "hybrid" else f"{governance_dir}/INDEX.md"
+                    rendered = f"# {name}\n\nStart with [{landing}]({landing}).\n"
+                if visibility != "public" and relative not in {"README.md", ".gitignore", ".project-governance.toml"}:
+                    rendered = rendered.replace("docs/", f"{governance_dir}/")
+                path.write_text(rendered.format(project_name=name, date=date.today().isoformat(), git_state=git_state, profile=profile, collaboration_mode=collaboration_mode, visibility=visibility, governance_dir=governance_dir, public_docs_dir=public_docs_dir), encoding="utf-8")
             except OSError as exc:
                 errors[relative] = str(exc)
                 continue
         created.append(relative)
-    return ScaffoldResult(tuple(created), tuple(skipped), git_state, "requirements_discussion", errors, profile, collaboration_mode)
+    return ScaffoldResult(tuple(created), tuple(skipped), git_state, "requirements_discussion", errors, profile, collaboration_mode, visibility, governance_dir, public_docs_dir)
 
 _MAPPINGS = {"docs/coding/PRD.md": "requirements_index", "docs/coding/TSD.md": "design_index", "docs/coding/DESIGN.md": "ui_design_index", "docs/coding/API.md": "api_contract_index"}
 def adopt_project(root: str | Path) -> AdoptionReport:

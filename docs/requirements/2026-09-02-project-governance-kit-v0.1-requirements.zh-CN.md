@@ -61,6 +61,10 @@ v0.1 先支持单 Agent 和不同会话的顺序交接。并行 Agent、worktree
   可选扩展；
 - Agent 可以提出治理等级或模块调整，但不能静默修改；治理变更必须有提案、
   影响分析、用户确认和历史保留；
+- 治理记录可见性独立配置为 `team-private`、`hybrid` 或 `public`；团队私有模式
+  依赖私有 Git 仓库，混合模式将公开文档与完整治理记录分离；
+- Kit 不自动修改 GitHub/GitLab 权限，不自动删除、迁移或重写已有记录；公开发布
+  前必须使用可审查的筛选副本或独立公开仓库；
 - 本节由 [ADR-0002](../decisions/ADR-0002-governance-profiles-and-v0-1-scope.md)
   记录，优先于旧版并行协作表述。
 
@@ -353,6 +357,8 @@ Kit 应提供可被 Agent 集成执行的授权规则和检查结果：无匹配
 - 治理等级分为 Lite、Standard、Strict；协作模式独立配置，v0.1 只支持 single-agent
   和 sequential-agents；
 - Agent 可以提出治理变更提案，但必须经用户确认后才能修改治理配置；
+- 治理记录可见性变更必须先生成可预览报告；`.gitignore` 不能消除已经进入公开
+  Git 历史的记录；
 - commit、push、Issue/PR、merge、tag、release 和删除默认逐次确认；明确的任务级/会话级
   授权必须包含动作、目标和期限，且不自动扩大到相邻动作；
 - 活动日志记录治理节点而不是每条命令或每段对话；

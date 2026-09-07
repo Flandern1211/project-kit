@@ -12,3 +12,5 @@ The index is generated from records.
 - [TASK-006](TASK-006-record-governance-profile-scope-revision.md) — verified
 - [TASK-007](TASK-007-implement-governance-profiles.md) — verified
 - [TASK-008](TASK-008-sync-bilingual-readme.md) — verified
+- [TASK-009](TASK-009-visibility-modes-design.md) — verified
+- [TASK-010](TASK-010-implement-visibility-modes.md) — verified

@@ -10,7 +10,7 @@ current_design: DES-002-ZH
 current_task: none
 owner: root
 blocker: existing dirty worktrees and user-owned unregistered task/TASK-006-v02-migration are not part of this task; protected Git actions still require user approval
-next_action: review TASK-007/TASK-008 updates; create a new task for further scope
+next_action: review TASK-010 visibility implementation; create a publication/export task if needed
 git_state: git_initialized
 updated: 2026-09-07
 ```
@@ -45,8 +45,13 @@ Protected Git and remote actions still require explicit user approval.
   acceptance fixture: passed; see [VER-001](verification/VER-001-v0-1-new-project-baseline.md).
 - current profile implementation regression suite: 92 tests passed; compileall and
   diff-check passed. `pgk check` still reports only existing Git-state issues.
+- visibility implementation regression suite: 101 tests passed; real-project
+  team-private/hybrid/public initialization and checks passed.
 
 ## Next action
 
-TASK-007 profile implementation and TASK-008 bilingual README synchronization are verified. Parallel coordination, automatic
-profile assessment, and external integrations remain deferred.
+TASK-007 profile implementation and TASK-008 bilingual README synchronization are verified.
+TASK-009 visibility design and TASK-010 implementation are verified. Visibility
+supports team-private, hybrid, and public paths. Parallel coordination,
+automatic profile assessment, publication/export, and external integrations
+remain deferred.

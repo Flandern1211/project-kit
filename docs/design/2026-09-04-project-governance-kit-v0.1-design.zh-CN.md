@@ -34,6 +34,13 @@ v0.1 使用 Python 3.11+ 标准库。核心 CLI 只负责本地文件和只读 G
 本节由 [ADR-0002](../decisions/ADR-0002-governance-profiles-and-v0-1-scope.md)
 记录，优先于旧版并行协作表述。
 
+### 1.2 治理记录可见性（2026-09-07）
+
+治理记录可见性独立于 profile 和协作模式，支持 `team-private`、`hybrid`、`public`。
+完整设计和实现边界见 [ADR-0003](../decisions/ADR-0003-governance-record-visibility.md)
+及 [可见性规格](../superpowers/specs/2026-09-07-governance-visibility-design.md)。
+核心 Kit 不修改远程仓库权限、不重写历史，也不自动迁移已有文件。
+
 ## 2. 初始化流程
 
 ```text
