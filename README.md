@@ -17,6 +17,9 @@ Markdown/TOML 文件，并提供离线检查能力。
 - 读取 Git 分支、提交和工作区状态；
 - 更新任务的跨会话交接区。
 
+治理 profile 分为 `lite`、`standard`、`strict`，只控制文档和检查深度；协作模式
+独立配置。v0.1 支持 `single-agent` 和 `sequential-agents`，并行 Agent 协作暂缓。
+
 GitHub Issue 和 Pull Request 作为讨论、评审和合并入口；仓库 Markdown 是长期记录的权威来源。
 
 ## 开发
@@ -36,6 +39,15 @@ python -m project_governance --help
 ```powershell
 pgk init --root . --project-name MyProject
 pgk check --root .
+```
+
+初始化支持 `lite`、`standard`、`strict` 三档治理 profile；v0.1 协作模式支持
+`single-agent` 和 `sequential-agents`：
+
+```powershell
+pgk init --root . --profile lite
+pgk init --root . --profile standard --collaboration-mode sequential-agents
+pgk init --root . --profile strict
 ```
 
 推荐的 Agent 首轮流程是读取 `AGENTS.md`、`docs/INDEX.md` 和

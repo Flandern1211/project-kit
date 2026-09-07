@@ -19,6 +19,11 @@ and provides offline validation.
 - inspect Git branches, commits, and worktree state;
 - update a task's cross-session handoff section.
 
+Governance profiles are `lite`, `standard`, and `strict`; they control the
+depth of documentation and checks. Collaboration mode is independent of the
+profile. v0.1 supports `single-agent` and `sequential-agents`; parallel Agent
+coordination is deferred.
+
 GitHub Issues and pull requests remain discussion, review, and merge entry
 points. Repository Markdown is the durable source of truth.
 
@@ -40,6 +45,18 @@ From a new project root, initialize the governance files and validate them:
 pgk init --root . --project-name MyProject
 pgk check --root .
 ```
+
+Choose a governance profile and, when needed, sequential handoffs:
+
+```powershell
+pgk init --root . --profile lite
+pgk init --root . --profile standard --collaboration-mode sequential-agents
+pgk init --root . --profile strict
+```
+
+Lite creates the core requirements, task, bug, and verification structure;
+Standard creates the complete governance skeleton; Strict adds risk, security,
+and release indexes.
 
 Recommended first-agent flow: read `AGENTS.md`, `docs/INDEX.md`, and
 `docs/STATUS.md`, then run `pgk doctor --root . --json`. After the user accepts

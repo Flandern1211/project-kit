@@ -39,7 +39,18 @@ pgk init --root . --project-name MyProject
 pgk check --root .
 ```
 
-`init` 默认使用 `standard` profile。它只创建不存在的文件；已有文件会
+`init` 默认使用 `standard` profile 和 `single-agent` 协作模式。可按项目治理深度
+选择 `lite`、`standard` 或 `strict`；v0.1 协作模式可选 `single-agent` 或
+`sequential-agents`，并行模式暂不支持：
+
+```powershell
+pgk init --root . --profile lite
+pgk init --root . --profile standard --collaboration-mode sequential-agents
+pgk init --root . --profile strict
+```
+
+Lite 只创建核心需求、任务和验证记录；Standard 创建完整治理骨架；Strict 在
+Standard 基础上增加风险、安全和发布索引。它只创建不存在的文件；已有文件会
 列在 `skipped` 中，不会被覆盖。预览写入而不修改文件：
 
 `init` uses the `standard` profile by default. It creates only missing files;

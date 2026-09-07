@@ -8,8 +8,10 @@ import re
 import subprocess
 
 from .authorization import _authorization_fields, _when
+from .config import load_config
 from .frontmatter import FrontmatterError, parse_frontmatter
 from .git_context import inspect_git
+from .scaffold import required_artifacts_for_profile
 
 BASELINE = ("AGENTS.md", "README.md", ".gitignore", ".project-governance.toml", "CONTRIBUTING.md", "CHANGELOG.md", "docs/INDEX.md", "docs/STATUS.md")
 REQUIRED_VIEWS = ("docs/STATUS.md", "docs/WORKFLOW.md", "docs/work/BOARD.md", "docs/activity/ACTIVITY.md")
@@ -35,6 +37,11 @@ VIEW_MARKERS = {
 RECORD_INDEXES = {
     "requirement": "docs/requirements/INDEX.md", "design": "docs/design/INDEX.md", "decision": "docs/decisions/INDEX.md",
     "task": "docs/work/tasks/INDEX.md", "bug": "docs/work/bugs/INDEX.md", "review": "docs/reviews/INDEX.md", "verification": "docs/verification/INDEX.md",
+}
+PROFILE_RECORD_INDEXES = {
+    "lite": {"requirement": RECORD_INDEXES["requirement"], "task": RECORD_INDEXES["task"], "bug": RECORD_INDEXES["bug"], "verification": RECORD_INDEXES["verification"]},
+    "standard": RECORD_INDEXES,
+    "strict": RECORD_INDEXES,
 }
 PROJECT_STAGES = {"initialized", "requirements_discussion", "requirements_review", "active_development", "maintenance", "blocked"}
 RECORD_ID_RE = re.compile(r"^(REQ|DES|ADR|TASK|BUG|REVIEW|VER|INC)-[A-Za-z0-9][A-Za-z0-9._-]*$")
@@ -118,6 +125,11 @@ def _check_authorization(path: str, text: str, issues: list[dict[str, str]]) -> 
 
 def run_checks(root: str | Path) -> CheckResult:
     root = Path(root); issues: list[dict[str, str]] = []
+    profile = "standard"
+    try:
+        profile = load_config(root / ".project-governance.toml").profile
+    except (OSError, ValueError) as exc:
+        _issue(issues, "invalid_config", ".project-governance.toml", str(exc))
     ignored_dirs = {".git", ".agent", ".pytest-tmp", ".pytest_cache", ".superpowers", ".worktrees", ".venv", ".mypy_cache", ".ruff_cache", "node_modules", "dist", "build", ".tmp", "tmp", "temp"}
     files = sorted(path for path in root.rglob("*.md") if not any(part in ignored_dirs or part.startswith(".pytest-tmp") for part in path.relative_to(root).parts))
     checked_files = tuple(path.relative_to(root).as_posix() for path in files)
@@ -190,12 +202,13 @@ def run_checks(root: str | Path) -> CheckResult:
     generated_project = bool(re.search(r"(?im)^\s*project_stage\s*:", status_text))
     governed_project = generated_project or (root / ".project-governance.toml").exists() or any("PGK_GENERATED:" in path.read_text(encoding="utf-8") for path in files)
     if governed_project:
-        for relative in REQUIRED_ARTIFACTS:
+        for relative in required_artifacts_for_profile(profile):
             if not (root / relative).exists():
-                _issue(issues, "missing_required_artifact", relative, f"missing required scaffold artifact: {relative}")
+                code = "missing_required_artifact" if profile == "standard" else "missing_profile_artifact"
+                _issue(issues, code, relative, f"missing required {profile} profile artifact: {relative}")
         for relative in REQUIRED_VIEWS:
             if not (root / relative).exists(): _issue(issues, "missing_required_view", relative, f"missing required view: {relative}")
-        for kind, relative in RECORD_INDEXES.items():
+        for kind, relative in PROFILE_RECORD_INDEXES[profile].items():
             index = root / relative
             if not index.exists(): _issue(issues, "missing_record_index", relative, f"missing required record index: {relative}"); continue
             content = index.read_text(encoding="utf-8")
