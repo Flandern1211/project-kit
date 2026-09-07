@@ -50,8 +50,10 @@ root
 `py -3 -m pytest --basetemp D:\pgk-full-final -q`：92 passed。
 `py -3 -m compileall -q src tests`：passed。
 `git diff --check`：passed。
-`pgk check` 文档/link 检查通过；剩余 dirty worktree 和未登记的
-`task/TASK-006-v02-migration` 属于现有工作区状态，按用户说明不处理。
+`pgk check` 文档/link 检查通过；真实测试目录 `D:\Project\test\_project` 中
+Standard、Lite、Strict 初始化与检查均通过，Standard 需求记录闭环也通过。剩余
+dirty worktree 和未登记的 `task/TASK-006-v02-migration` 属于现有工作区状态，
+按用户说明不处理。
 
 ## Changes
 
@@ -71,5 +73,5 @@ root
 
 branch: task/TASK-007-governance-profiles
 worktree: N/A
-base_commit: N/A
-head_commit: N/A
+base_commit: 94f663b
+head_commit: c67d035
