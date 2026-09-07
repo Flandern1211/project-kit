@@ -24,6 +24,12 @@ depth of documentation and checks. Collaboration mode is independent of the
 profile. v0.1 supports `single-agent` and `sequential-agents`; parallel Agent
 coordination is deferred.
 
+Governance visibility is independent and can be `team-private`, `hybrid`, or
+`public`. Teams should keep complete governance records in a private Git
+repository; public releases should use a reviewed sanitized copy or a separate
+public repository. The Kit does not change GitHub permissions or rewrite
+existing history.
+
 GitHub Issues and pull requests remain discussion, review, and merge entry
 points. Repository Markdown is the durable source of truth.
 
@@ -52,6 +58,8 @@ Choose a governance profile and, when needed, sequential handoffs:
 pgk init --root . --profile lite
 pgk init --root . --profile standard --collaboration-mode sequential-agents
 pgk init --root . --profile strict
+pgk init --root . --profile standard --visibility team-private
+pgk init --root . --profile standard --visibility hybrid
 ```
 
 Lite creates the core requirements, task, bug, and verification structure;

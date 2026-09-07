@@ -70,6 +70,12 @@ scope locking, and automatic merging are deferred extensions, not v0.1 core.
 - An Agent may propose profile or module changes but may not change governance
   silently. A governance change requires a proposal, impact analysis, user
   confirmation, and history preservation.
+- Governance visibility is independent and may be `team-private`, `hybrid`, or
+  `public`. Team-private mode relies on a private Git repository; hybrid mode
+  separates public documentation from complete governance records.
+- The Kit does not change GitHub/GitLab permissions or automatically delete,
+  migrate, or rewrite existing records. Public release uses a reviewable
+  sanitized copy or a separate public repository.
 - [ADR-0002](../decisions/ADR-0002-governance-profiles-and-v0-1-scope.md)
   records this revision and takes precedence over the older parallel-work
   wording.
@@ -422,6 +428,8 @@ authorization state, and next action from project documents and Git state.
   independent and v0.1 supports only single-agent and sequential-agents.
 - An Agent may propose governance changes but needs user confirmation before
   changing governance configuration.
+- Visibility changes require a previewable report; `.gitignore` cannot erase
+  records already present in public Git history.
 - Commit, push, Issue/PR, merge, tag, release, and deletion default to
   per-action confirmation. Explicit task/session authorization names action,
   target, and expiry and does not expand to adjacent actions.

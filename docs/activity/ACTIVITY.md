@@ -10,3 +10,9 @@
 2026-09-07 | root | verify-implementation | TASK-007 | N/A | 91 tests passed; compileall and diff-check passed; profile implementation verified
 2026-09-07 | root | verify-readme-sync | TASK-008 | task/TASK-007-governance-profiles | Chinese and English README profile/mode usage synchronized
 2026-09-07 | root | create-pull-request | TASK-007 | task/TASK-007-governance-profiles | PR #1 opened against main; OPEN and MERGEABLE/CLEAN
+2026-09-07 | root | create-visibility-spec | TASK-009 | task/TASK-009-visibility-modes | team-private/hybrid/public design written; awaiting user review
+2026-09-07 | root | accept-visibility-spec | TASK-009 | task/TASK-009-visibility-modes | user approved written visibility specification
+2026-09-07 | root | start-visibility-implementation | TASK-010 | task/TASK-009-visibility-modes | implementing private/hybrid/public governance paths
+2026-09-07 | root | verify-visibility-implementation | TASK-010 | task/TASK-009-visibility-modes | 98 tests passed; real team-private/hybrid/public validation passed
+2026-09-07 | root | verify-visibility-implementation | TASK-010 | task/TASK-009-visibility-modes | 100 tests passed; ignore-rule and invalid-visibility checks added
+2026-09-07 | root | verify-visibility-implementation | TASK-010 | task/TASK-009-visibility-modes | 101 tests passed; real team-private/hybrid/public validation passed
