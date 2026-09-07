@@ -17,6 +17,9 @@ Markdown/TOML 文件，并提供离线检查能力。
 - 读取 Git 分支、提交和工作区状态；
 - 更新任务的跨会话交接区。
 
+治理 profile 分为 `lite`、`standard`、`strict`，只控制文档和检查深度；协作模式
+独立配置。v0.1 支持 `single-agent` 和 `sequential-agents`，并行 Agent 协作暂缓。
+
 GitHub Issue 和 Pull Request 作为讨论、评审和合并入口；仓库 Markdown 是长期记录的权威来源。
 
 ## 开发

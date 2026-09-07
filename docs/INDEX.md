@@ -30,6 +30,7 @@ second copy of the documents it links to.
 - [TASK-005: v0.1 new-project governance baseline](work/tasks/TASK-005-implement-v0-1-new-project-governance-baseline.md)
 - [TASK-006: governance profile and scope revision](work/tasks/TASK-006-record-governance-profile-scope-revision.md)
 - [TASK-007: implement governance profiles](work/tasks/TASK-007-implement-governance-profiles.md)
+- [TASK-008: sync bilingual README](work/tasks/TASK-008-sync-bilingual-readme.md)
 - [v0.1 implementation plan](superpowers/plans/2026-09-02-project-governance-kit-v0.1-implementation.md)
 - [v0.1 baseline implementation plan](superpowers/plans/2026-09-04-project-governance-kit-v0.1-baseline-implementation.md)
 

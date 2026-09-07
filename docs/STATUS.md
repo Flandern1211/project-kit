@@ -10,7 +10,7 @@ current_design: DES-002-ZH
 current_task: none
 owner: root
 blocker: existing dirty worktrees and user-owned unregistered task/TASK-006-v02-migration are not part of this task; protected Git actions still require user approval
-next_action: review TASK-007 profile implementation; create a new task for further scope
+next_action: review TASK-007/TASK-008 updates; create a new task for further scope
 git_state: git_initialized
 updated: 2026-09-07
 ```
@@ -48,5 +48,5 @@ Protected Git and remote actions still require explicit user approval.
 
 ## Next action
 
-TASK-007 profile implementation is verified. Parallel coordination, automatic
+TASK-007 profile implementation and TASK-008 bilingual README synchronization are verified. Parallel coordination, automatic
 profile assessment, and external integrations remain deferred.

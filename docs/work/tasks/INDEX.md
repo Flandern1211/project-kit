@@ -11,3 +11,4 @@ The index is generated from records.
 - [TASK-005](TASK-005-implement-v0-1-new-project-governance-baseline.md) — verified
 - [TASK-006](TASK-006-record-governance-profile-scope-revision.md) — verified
 - [TASK-007](TASK-007-implement-governance-profiles.md) — verified
+- [TASK-008](TASK-008-sync-bilingual-readme.md) — verified

@@ -13,6 +13,7 @@ The index is generated from task and bug records.
 - [TASK-005](tasks/TASK-005-implement-v0-1-new-project-governance-baseline.md) — verified
 - [TASK-006](tasks/TASK-006-record-governance-profile-scope-revision.md) — verified
 - [TASK-007](tasks/TASK-007-implement-governance-profiles.md) — verified
+- [TASK-008](tasks/TASK-008-sync-bilingual-readme.md) — verified
 
 ## Bugs
 

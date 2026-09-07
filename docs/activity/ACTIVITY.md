@@ -8,3 +8,4 @@
 2026-09-07 | root | verify-document-sync | TASK-006 | N/A | pgk check passed document/link validation; only pre-existing Git-state issues remain
 2026-09-07 | root | start-implementation | TASK-007 | N/A | implementing profile and collaboration-mode baseline
 2026-09-07 | root | verify-implementation | TASK-007 | N/A | 91 tests passed; compileall and diff-check passed; profile implementation verified
+2026-09-07 | root | verify-readme-sync | TASK-008 | task/TASK-007-governance-profiles | Chinese and English README profile/mode usage synchronized
