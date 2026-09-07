@@ -55,6 +55,10 @@ Standard、Lite、Strict 初始化与检查均通过，Standard 需求记录闭�
 dirty worktree 和未登记的 `task/TASK-006-v02-migration` 属于现有工作区状态，
 按用户说明不处理。
 
+PR 已创建：[#1](https://github.com/Flandern1211/project-kit/pull/1)。目标为本仓库
+`main`，head 为 `task/TASK-007-governance-profiles`；创建时间 2026-09-07，状态
+`OPEN`，GitHub 报告 `MERGEABLE`/`CLEAN`。创建 PR 的授权来自用户明确请求“直接帮我提交 PR”。
+
 ## Changes
 
 已实现配置校验、profile 文件选择、协作模式参数、profile-aware checks、Lite 禁止
@@ -74,4 +78,4 @@ dirty worktree 和未登记的 `task/TASK-006-v02-migration` 属于现有工作�
 branch: task/TASK-007-governance-profiles
 worktree: N/A
 base_commit: 94f663b
-head_commit: c67d035
+head_commit: 1f758a0
