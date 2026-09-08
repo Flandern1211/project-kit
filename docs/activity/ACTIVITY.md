@@ -21,3 +21,4 @@
 2026-09-08 | root | merge | TASK-011 | main@8d57cd7 | origin/main synchronized; combined suite verified
 2026-09-08 | root | start | TASK-012 | task/TASK-012-migration-relative-links | reproduce and fix migrated Markdown relative links
 2026-09-08 | root | verify | VER-003 | task/TASK-012-migration-relative-links | 139 tests passed; TouzhiAgent clone check has no broken-link issues
+2026-09-08 | root | merge | TASK-012 | main@7ebef4c | relative-link repair merged locally; push not authorized

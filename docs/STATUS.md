@@ -1,16 +1,16 @@
 # Project status
 
 ```yaml
-status: in_review
+status: verified
 project_stage: active_development
 version: 0.2.0.dev0
-active_task: TASK-012
+active_task: none
 current_requirement: REQ-002-ZH
 current_design: DES-003-ZH
-current_task: TASK-012
+current_task: none
 owner: root
-blocker: link-rewrite fix awaits review and merge authorization
-next_action: review TASK-012 diff and authorize commit/merge if appropriate
+blocker: none; push remains user-controlled
+next_action: review local main at 7ebef4c and decide whether to push
 git_state: git_initialized
 updated: 2026-09-08
 ```
@@ -31,7 +31,8 @@ TASK-011 was locally verified before synchronizing with `origin/main`; the
 combined profile, visibility and migration implementation passed merged-result
 verification on `main` at 8d57cd7.
 TASK-012 fixes relative links in migrated Markdown copies and passed an
-isolated TouzhiAgent clone validation.
+isolated TouzhiAgent clone validation. The fix is merged into local `main` at
+7ebef4c.
 
 ## Known constraints
 
@@ -62,6 +63,6 @@ isolated TouzhiAgent clone validation.
 ## Next action
 
 TASK-007 profile implementation and TASK-008 bilingual README synchronization are verified.
-TASK-009 visibility design, TASK-010 implementation, and TASK-011 migration
-implementation are verified in the merged result. TASK-012 is awaiting review
-before it is merged into main.
+TASK-009 visibility design, TASK-010 implementation, TASK-011 migration
+implementation, and TASK-012 relative-link repair are verified in the merged
+result. Review local main at 7ebef4c before authorizing push.
