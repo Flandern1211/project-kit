@@ -9,8 +9,8 @@ current_requirement: REQ-002-ZH
 current_design: DES-003-ZH
 current_task: TASK-011
 owner: root
-blocker: merged-result Git state is uncommitted; push remains user-controlled
-next_action: review merge commit and decide whether to push main
+blocker: none; push remains user-controlled
+next_action: review merge commit 8d57cd7 and decide whether to push main
 git_state: git_initialized
 updated: 2026-09-08
 ```
@@ -29,7 +29,7 @@ Protected Git and remote actions still require explicit user approval.
 REQ-002-ZH and DES-003-ZH define the v0.2 existing-project migration MVP.
 TASK-011 was locally verified before synchronizing with `origin/main`; the
 combined profile, visibility and migration implementation passed merged-result
-verification.
+verification on `main` at 8d57cd7.
 
 ## Known constraints
 
@@ -52,12 +52,12 @@ verification.
   diff-check passed. `pgk check` still reports only existing Git-state issues.
 - visibility implementation regression suite: 101 tests passed; real-project
   team-private/hybrid/public initialization and checks passed.
-- merged profile, visibility and migration suite: 120 tests passed; compileall
-  and diff-check passed; worktree-local pgk check reports only dirty worktree state.
+- merged profile, visibility and migration suite on `main`: 120 tests passed;
+  compileall and diff-check passed; worktree-local pgk check returned `ok=true`.
 
 ## Next action
 
 TASK-007 profile implementation and TASK-008 bilingual README synchronization are verified.
 TASK-009 visibility design, TASK-010 implementation, and TASK-011 migration
-implementation are verified in the merged result. Review the merge commit
-before authorizing push to main.
+implementation are verified in the merged result. Review 8d57cd7 before
+authorizing push to main.
