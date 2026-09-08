@@ -15,3 +15,4 @@ The index is generated from records.
 - [TASK-009](TASK-009-visibility-modes-design.md) — verified
 - [TASK-010](TASK-010-implement-visibility-modes.md) — verified
 - [TASK-011](TASK-011-implement-v0-2-existing-project-migration.md) — verified
+- [TASK-012](TASK-012-fix-migration-relative-links.md) — verified

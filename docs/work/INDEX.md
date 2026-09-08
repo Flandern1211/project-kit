@@ -17,6 +17,7 @@ The index is generated from task and bug records.
 - [TASK-009](tasks/TASK-009-visibility-modes-design.md) — verified
 - [TASK-010](tasks/TASK-010-implement-visibility-modes.md) — verified
 - [TASK-011](tasks/TASK-011-implement-v0-2-existing-project-migration.md) — verified
+- [TASK-012](tasks/TASK-012-fix-migration-relative-links.md) — verified
 
 ## Bugs
 

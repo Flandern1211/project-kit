@@ -126,6 +126,8 @@ pgk migrate apply MIG-001 --root C:\path\to\project --json
 
 `plan` 写入候选方案，`approve` 只改变条目状态，`apply` 只复制明确批准的条目。原文件保留在原位置，治理副本为 `draft` 并包含来源路径、来源哈希和迁移批次。重复运行具有幂等性；源变化或目标冲突会报告且不覆盖。
 
+迁移 Markdown 副本时，Kit 会把指向同批次治理副本的相对链接改写为新路径；指向仍保留在源项目中的现有文件时，改写为从治理副本可解析的源文件路径。外部链接、锚点和不存在的目标不改写，并保留为人工审查项。
+
 Migration mode first creates a `MIG-*` plan. It automatically handles only Markdown, Markdown variants, and UTF-8 plain text; other formats, sensitive files, and unclassified content are report-only. Original files remain in place, and conflicts never overwrite existing targets.
 
 ## 4. 创建治理记录 / Create records

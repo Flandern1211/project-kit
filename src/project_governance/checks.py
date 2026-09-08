@@ -263,6 +263,11 @@ def run_checks(root: str | Path) -> CheckResult:
             plan = load_migration_plan(root, metadata.id)
         except (OSError, ValueError) as exc:
             _issue(issues, "invalid_migration_item", relative, str(exc)); continue
+        migrated_targets = {
+            candidate.source_path: candidate.target_path
+            for candidate in plan.entries
+            if candidate.target_path and candidate.status in {"approved", "applied"}
+        }
         for entry in plan.entries:
             source = (root / entry.source_path).resolve()
             try:
@@ -287,7 +292,7 @@ def run_checks(root: str | Path) -> CheckResult:
                     _issue(issues, "migration_target_conflict", relative, f"applied migration target is missing: {entry.target_path}")
                 elif entry.status in {"approved", "applied"} and target.is_file() and not entry.sensitive:
                     try:
-                        expected = _render_governance_copy(root, metadata.id, entry, source.read_text(encoding="utf-8"))
+                        expected = _render_governance_copy(root, metadata.id, entry, source.read_text(encoding="utf-8"), migrated_targets)
                         if _normalize_generated(target.read_text(encoding="utf-8")) != _normalize_generated(expected):
                             _issue(issues, "migration_target_conflict", relative, f"migration target content differs: {entry.target_path}")
                     except (OSError, UnicodeDecodeError, ValueError):

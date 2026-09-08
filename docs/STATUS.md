@@ -1,16 +1,16 @@
 # Project status
 
 ```yaml
-status: verified
+status: in_review
 project_stage: active_development
 version: 0.2.0.dev0
-active_task: TASK-011
+active_task: TASK-012
 current_requirement: REQ-002-ZH
 current_design: DES-003-ZH
-current_task: TASK-011
+current_task: TASK-012
 owner: root
-blocker: none; push remains user-controlled
-next_action: review merge commit 8d57cd7 and decide whether to push main
+blocker: link-rewrite fix awaits review and merge authorization
+next_action: review TASK-012 diff and authorize commit/merge if appropriate
 git_state: git_initialized
 updated: 2026-09-08
 ```
@@ -30,6 +30,8 @@ REQ-002-ZH and DES-003-ZH define the v0.2 existing-project migration MVP.
 TASK-011 was locally verified before synchronizing with `origin/main`; the
 combined profile, visibility and migration implementation passed merged-result
 verification on `main` at 8d57cd7.
+TASK-012 fixes relative links in migrated Markdown copies and passed an
+isolated TouzhiAgent clone validation.
 
 ## Known constraints
 
@@ -54,10 +56,12 @@ verification on `main` at 8d57cd7.
   team-private/hybrid/public initialization and checks passed.
 - merged profile, visibility and migration suite on `main`: 120 tests passed;
   compileall and diff-check passed; worktree-local pgk check returned `ok=true`.
+- TASK-012 link-rewrite suite: 139 tests passed; real TouzhiAgent clone
+  migration produced no broken-link issues.
 
 ## Next action
 
 TASK-007 profile implementation and TASK-008 bilingual README synchronization are verified.
 TASK-009 visibility design, TASK-010 implementation, and TASK-011 migration
-implementation are verified in the merged result. Review 8d57cd7 before
-authorizing push to main.
+implementation are verified in the merged result. TASK-012 is awaiting review
+before it is merged into main.

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import posixpath
 import re
 from dataclasses import dataclass, replace
 from datetime import date
@@ -570,7 +571,67 @@ class MigrationApplyResult:
         }
 
 
-def _render_governance_copy(root: Path, migration_id: str, entry: MigrationEntry, source_text: str) -> str:
+_MARKDOWN_LINK_RE = re.compile(r"(?P<prefix>!?\[[^\]]*\]\()(?P<target><[^>]*>|[^)\s]+)(?P<suffix>\))")
+
+
+def _relative_link_target(
+    root: Path,
+    source_path: str,
+    target_path: str,
+    link_target: str,
+    migrated_targets: dict[str, str],
+) -> str:
+    """Resolve one local Markdown link against the source file and remap it."""
+
+    if link_target.startswith("<") and link_target.endswith(">"):
+        raw_target = link_target[1:-1]
+        wrapper = True
+    else:
+        raw_target = link_target
+        wrapper = False
+    if not raw_target or raw_target.startswith(("#", "/", "\\")):
+        return link_target
+    if re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", raw_target) or raw_target.startswith("//"):
+        return link_target
+    path_part, fragment = (raw_target.split("#", 1) + [""])[:2] if "#" in raw_target else (raw_target, "")
+    if not path_part:
+        return link_target
+    normalized = posixpath.normpath(posixpath.join(posixpath.dirname(source_path), path_part.replace("\\", "/")))
+    if normalized.startswith("../") or normalized == "..":
+        return link_target
+    target_file = root / Path(normalized)
+    if not target_file.is_file():
+        return link_target
+    destination = migrated_targets.get(normalized, normalized)
+    target_parent = posixpath.dirname(target_path)
+    rewritten = posixpath.relpath(destination, target_parent or ".")
+    if rewritten == ".":
+        rewritten = posixpath.basename(destination)
+    if fragment:
+        rewritten += "#" + fragment
+    return f"<{rewritten}>" if wrapper else rewritten
+
+
+def _rewrite_migration_links(
+    root: Path,
+    source_path: str,
+    target_path: str,
+    source_text: str,
+    migrated_targets: dict[str, str],
+) -> str:
+    return _MARKDOWN_LINK_RE.sub(
+        lambda match: match.group("prefix") + _relative_link_target(root, source_path, target_path, match.group("target"), migrated_targets) + match.group("suffix"),
+        source_text,
+    )
+
+
+def _render_governance_copy(
+    root: Path,
+    migration_id: str,
+    entry: MigrationEntry,
+    source_text: str,
+    migrated_targets: dict[str, str] | None = None,
+) -> str:
     if not entry.target_id or not entry.suggested_type or entry.suggested_type not in _TYPE_DIRECTORY:
         raise ValueError("migration item has no supported target type")
     metadata = RecordMetadata(
@@ -590,11 +651,12 @@ def _render_governance_copy(root: Path, migration_id: str, entry: MigrationEntry
         f"confidence: {entry.confidence}",
     ]
     frontmatter = render_frontmatter(metadata).replace("\n---\n", "\n" + "\n".join(extras) + "\n---\n", 1)
+    rewritten_source = _rewrite_migration_links(root, entry.source_path, entry.target_path or "", source_text, migrated_targets or {})
     return (
         frontmatter
         + f"> This draft was copied from `{entry.source_path}` by migration `{migration_id}`.\n> Review and confirm it before using it as a project requirement or design.\n\n"
         + "<!-- PGK_SOURCE_BEGIN -->\n"
-        + source_text.rstrip()
+        + rewritten_source.rstrip()
         + "\n<!-- PGK_SOURCE_END -->\n"
     )
 
@@ -643,6 +705,12 @@ def apply_migration(root: str | Path, migration_id: str, *, item_ids: Sequence[s
     verification_paths: list[str] = []
     updated_entries: list[MigrationEntry] = []
     generated_paths: list[str] = []
+    migrated_targets = {
+        entry.source_path: entry.target_path
+        for entry in plan.entries
+        if entry.target_path and entry.status in {"approved", "applied"}
+        and (selected is None or entry.item_id in selected or entry.status == "applied")
+    }
 
     for entry in plan.entries:
         if entry.status != "approved" or (selected is not None and entry.item_id not in selected):
@@ -684,7 +752,7 @@ def apply_migration(root: str | Path, migration_id: str, *, item_ids: Sequence[s
             target = (root / entry.target_path).resolve()
             _validate_entry_shape(root, entry)
             _relative(root, target)
-            generated = _render_governance_copy(root, migration_id, entry, text)
+            generated = _render_governance_copy(root, migration_id, entry, text, migrated_targets)
             if target.exists():
                 if _normalize_generated(target.read_text(encoding="utf-8")) == _normalize_generated(generated):
                     skipped.append(entry.item_id)
