@@ -3,20 +3,21 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
+from .config import default_visibility_dirs, validate_collaboration_mode, validate_profile, validate_visibility, validate_visibility_dirs
 from .git_context import inspect_git
 
 _EMPTY = "# {title}\n\nNo records yet.\n"
 STANDARD_FILES: dict[str, str] = {
-    "AGENTS.md": "# Agent instructions for {project_name}\n\n## Read before acting\nRead `AGENTS.md`, `docs/INDEX.md`, `docs/STATUS.md`, linked requirement/design/task/bug/review/verification records, then Git branch, HEAD, worktree and status.\n\n## State gates\nRequirements are drafts until user confirmation. Before implementation require an accepted requirement, applicable design/ADR, and TASK/BUG with owner, scope and file range. Stop and record blockers for missing or conflicting records.\n\n## Handoff\nRecord completed and remaining work, branch, worktree, HEAD, workspace status, uncommitted changes, blockers, verification, and one next action.\n\n## Protected actions\nCommit, push, Issue/PR, merge, tag, release/publication, and deletion require explicit user authorization naming action, target, scope, and expiry. Authorization never carries to another action; without a match prepare a preview only.\n",
+    "AGENTS.md": "# Agent instructions for {project_name}\n\nGovernance profile: {profile}\nCollaboration mode: {collaboration_mode}\n\n## Read before acting\nRead `AGENTS.md`, `docs/INDEX.md`, `docs/STATUS.md`, linked requirement/design/task/bug/review/verification records, then the current Git branch, HEAD and status.\n\n## State gates\nRequirements are drafts until user confirmation. Before implementation require an accepted requirement, applicable design/ADR, and TASK/BUG with owner and scope. Stop and record blockers for missing or conflicting records. v0.1 supports single-Agent work and sequential handoffs; parallel coordination is deferred.\n\n## Handoff\nRecord completed and remaining work, branch, HEAD, workspace status, uncommitted changes, blockers, verification, and one next action.\n\n## Protected actions\nCommit, push, Issue/PR, merge, tag, release/publication, and deletion require explicit user authorization naming action, target, scope, and expiry. Authorization never carries to another action; without a match prepare a preview only.\n",
     "README.md": "# {project_name}\n\nStart with [docs/INDEX.md](docs/INDEX.md).\n",
     "CONTRIBUTING.md": "# Contributing to {project_name}\n\nStart non-trivial work from a task or bug record. Keep code, tests, documentation, and verification linked.\n",
     "CHANGELOG.md": "# Changelog\n\n## Unreleased\n\n",
     ".gitignore": "# Project Governance Kit\n__pycache__/\n*.py[cod]\n.venv/\n.agent/\n",
-    ".project-governance.toml": "kit_version = \"0.2.0\"\nschema_version = 2\nprofile = \"standard\"\ndocs_dir = \"docs\"\nrecords_dir = \"docs/work\"\n",
-    "docs/INDEX.md": "# Project documentation index\n\nRead [STATUS](STATUS.md), then the relevant requirement, design, migration, task, review and verification records.\n",
-    "docs/STATUS.md": "# Project status\n\n```yaml\nproject_stage: requirements_discussion\ncurrent_requirement: N/A\ncurrent_design: N/A\ncurrent_task: N/A\nowner: N/A\nblocker: none\nnext_action: discuss and record project requirements\nupdated: {date}\ngit_state: {git_state}\n```\n\nNo business requirements are created by initialization.\n",
+    ".project-governance.toml": "kit_version = \"0.1.0\"\nschema_version = 1\nprofile = \"{profile}\"\ncollaboration_mode = \"{collaboration_mode}\"\nvisibility = \"{visibility}\"\ngovernance_dir = \"{governance_dir}\"\npublic_docs_dir = \"{public_docs_dir}\"\ndocs_dir = \"docs\"\nrecords_dir = \"docs/work\"\n",
+    "docs/INDEX.md": "# Project documentation index\n\nRead [STATUS](STATUS.md), then the relevant requirement, design, task, review and verification records.\n",
+    "docs/STATUS.md": "# Project status\n\n```yaml\nproject_stage: requirements_discussion\nprofile: {profile}\ncollaboration_mode: {collaboration_mode}\ncurrent_requirement: N/A\ncurrent_design: N/A\ncurrent_task: N/A\nowner: N/A\nblocker: none\nnext_action: discuss and record project requirements\nupdated: {date}\ngit_state: {git_state}\n```\n\nNo business requirements are created by initialization.\n",
     "docs/WORKFLOW.md": "<!-- PGK_GENERATED: workflow -->\n# Governance workflow\n\n```mermaid\nstateDiagram-v2\n[*] --> initialized\ninitialized --> requirements_discussion\nrequirements_discussion --> requirements_review\nrequirements_review --> active_development\nactive_development --> maintenance\nactive_development --> blocked\nmaintenance --> active_development\nblocked --> active_development: resolve blocker and resume\nblocked --> requirements_review: revise requirements\n```\n",
-    "docs/templates/INDEX.md": "# Record templates\n\nTemplates: requirement, design, decision, task, bug, review, verification, migration.\n",
+    "docs/templates/INDEX.md": "# Record templates\n\nTemplates: requirement, design, decision, task, bug, review, verification.\n",
     "docs/requirements/INDEX.md": "<!-- PGK_GENERATED: requirement-index -->\n# Requirement index\n\nNo records yet.\n",
     "docs/design/INDEX.md": "<!-- PGK_GENERATED: design-index -->\n# Design index\n\nNo records yet.\n",
     "docs/decisions/INDEX.md": "<!-- PGK_GENERATED: decision-index -->\n# Decision index\n\nNo records yet.\n",
@@ -47,6 +48,61 @@ STANDARD_FILES["docs/templates/review.md"] = "# Review template\n\n## Purpose\n#
 STANDARD_FILES["docs/templates/migration.md"] = "# Migration template\n\n## Purpose\n## Owner\nN/A\n## Scope\nN/A\n## Scan\nN/A\n## Items\nN/A\n## Approval\npending\n## Acceptance\n## Evidence\n## Changes\n## Blockers\n## Next action\nN/A\n\n## Git\nbranch: N/A\nworktree: N/A\nbase_commit: N/A\nhead_commit: N/A\n\n## Handoff\n\n<!-- PGK_HANDOFF_START -->\n<!-- PGK_HANDOFF_END -->\n"
 STANDARD_DIRECTORIES = tuple(sorted({str(Path(p).parent).replace("\\", "/") for p in STANDARD_FILES}))
 
+LITE_KEYS = {
+    "AGENTS.md", "README.md", "CONTRIBUTING.md", "CHANGELOG.md", ".gitignore",
+    ".project-governance.toml", "docs/INDEX.md", "docs/STATUS.md", "docs/WORKFLOW.md",
+    "docs/templates/INDEX.md", "docs/templates/requirement.md", "docs/templates/task.md",
+    "docs/templates/bug.md", "docs/templates/verification.md", "docs/requirements/INDEX.md",
+    "docs/work/BOARD.md", "docs/work/tasks/INDEX.md", "docs/work/bugs/INDEX.md",
+    "docs/verification/INDEX.md", "docs/activity/ACTIVITY.md",
+}
+STRICT_FILES: dict[str, str] = {
+    "docs/risk/INDEX.md": _EMPTY.format(title="Risk index"),
+    "docs/security/INDEX.md": _EMPTY.format(title="Security index"),
+    "docs/releases/INDEX.md": _EMPTY.format(title="Releases index"),
+}
+
+
+def files_for_profile(profile: str) -> dict[str, str]:
+    profile = validate_profile(profile)
+    if profile == "lite":
+        return {key: STANDARD_FILES[key] for key in STANDARD_FILES if key in LITE_KEYS}
+    files = dict(STANDARD_FILES)
+    if profile == "strict":
+        files.update(STRICT_FILES)
+    return files
+
+
+def files_for_visibility(
+    profile: str,
+    visibility: str,
+    governance_dir: str | None = None,
+    public_docs_dir: str | None = None,
+) -> dict[str, str]:
+    visibility = validate_visibility(visibility)
+    default_governance, default_public = default_visibility_dirs(visibility)
+    governance_dir, public_docs_dir = validate_visibility_dirs(visibility, governance_dir or default_governance, public_docs_dir or default_public)
+    source = files_for_profile(profile)
+    if visibility == "public":
+        return source
+    result: dict[str, str] = {}
+    for relative, template in source.items():
+        mapped = f"{governance_dir}/{relative[5:]}" if relative.startswith("docs/") else relative
+        rendered = template.replace("docs/", f"{governance_dir}/")
+        result[mapped] = rendered
+    if visibility == "hybrid":
+        result[f"{public_docs_dir}/INDEX.md"] = "# Public documentation index\n\nPublic project documentation belongs here. Internal governance records are stored separately.\n"
+    return result
+
+
+def required_artifacts_for_profile(profile: str) -> tuple[str, ...]:
+    files = files_for_profile(profile)
+    baseline = {"docs/templates/INDEX.md", "docs/templates/requirement.md", "docs/templates/design.md",
+                "docs/templates/decision.md", "docs/templates/task.md", "docs/templates/bug.md",
+                "docs/templates/review.md", "docs/templates/verification.md", "docs/operations/runbooks/INDEX.md",
+                "docs/templates/migration.md", "docs/migrations/INDEX.md", "docs/operations/incidents/INDEX.md", "docs/operations/postmortems/INDEX.md"}
+    return tuple(sorted(path for path in files if path in baseline or path.startswith("docs/risk/") or path.startswith("docs/security/") or path.startswith("docs/releases/")))
+
 @dataclass(frozen=True, slots=True)
 class ScaffoldResult:
     created: tuple[str, ...]
@@ -54,8 +110,13 @@ class ScaffoldResult:
     git_state: str
     project_stage: str
     errors: dict[str, str] = field(default_factory=dict)
+    profile: str = "standard"
+    collaboration_mode: str = "single-agent"
+    visibility: str = "public"
+    governance_dir: str = "docs"
+    public_docs_dir: str = "docs"
     def as_dict(self) -> dict[str, object]:
-        return {"created": list(self.created), "skipped": list(self.skipped), "git_state": self.git_state, "project_stage": self.project_stage, "errors": dict(self.errors or {})}
+        return {"created": list(self.created), "skipped": list(self.skipped), "git_state": self.git_state, "project_stage": self.project_stage, "profile": self.profile, "collaboration_mode": self.collaboration_mode, "visibility": self.visibility, "governance_dir": self.governance_dir, "public_docs_dir": self.public_docs_dir, "errors": dict(self.errors or {})}
 
 @dataclass(frozen=True, slots=True)
 class AdoptionReport:
@@ -67,57 +128,64 @@ class AdoptionReport:
     exclude_patterns: tuple[str, ...] = ()
     git: dict[str, object] = field(default_factory=dict)
     def as_dict(self) -> dict[str, object]:
-        return {
-            "existing": list(self.existing),
-            "missing": list(self.missing),
-            "mappings": [dict(item) for item in self.mappings],
-            "candidates": [dict(item) for item in self.candidates],
-            "scan_roots": list(self.scan_roots),
-            "exclude_patterns": list(self.exclude_patterns),
-            "git": dict(self.git),
-        }
+        return {"existing": list(self.existing), "missing": list(self.missing), "mappings": [dict(item) for item in self.mappings], "candidates": [dict(item) for item in self.candidates], "scan_roots": list(self.scan_roots), "exclude_patterns": list(self.exclude_patterns), "git": dict(self.git)}
 
-def init_project(root: str | Path, *, project_name: str | None = None, profile: str = "standard", mode: str = "new", dry_run: bool = False) -> ScaffoldResult:
-    if profile != "standard": raise ValueError(f"unsupported profile: {profile}")
-    if mode not in {"new", "supplement"}: raise ValueError(f"unsupported initialization mode: {mode}")
+def init_project(root: str | Path, *, project_name: str | None = None, profile: str = "standard", mode: str = "new", collaboration_mode: str = "single-agent", visibility: str = "public", governance_dir: str | None = None, public_docs_dir: str | None = None, dry_run: bool = False) -> ScaffoldResult:
+    if mode not in {"new", "supplement"}:
+        raise ValueError(f"unsupported initialization mode: {mode}")
+    profile = validate_profile(profile)
+    collaboration_mode = validate_collaboration_mode(collaboration_mode, v01=True)
+    visibility = validate_visibility(visibility)
+    default_governance, default_public = default_visibility_dirs(visibility)
+    governance_dir, public_docs_dir = validate_visibility_dirs(visibility, governance_dir or default_governance, public_docs_dir or default_public)
     root = Path(root)
     if not root.exists() or not root.is_dir(): raise ValueError(f"project root does not exist: {root}")
     name = (project_name or root.name).strip() or root.name
     try: inspect_git(root); git_state = "git_initialized"
     except ValueError: git_state = "git_not_initialized"
-    for relative in STANDARD_FILES:
+    files = files_for_visibility(profile, visibility, governance_dir, public_docs_dir)
+    for relative in files:
         path = root / relative
         if path.exists() and path.is_dir():
             raise ValueError(f"required path is a directory: {relative}")
     created, skipped, errors = [], [], {}
     if not dry_run:
-        for directory in STANDARD_DIRECTORIES:
+        directories = tuple(sorted({str(Path(p).parent).replace("\\", "/") for p in files}))
+        for directory in directories:
             try:
                 (root / directory).mkdir(parents=True, exist_ok=True)
             except OSError as exc:
                 errors[directory] = str(exc)
-    project_stage = "adoption_review" if mode == "supplement" else "requirements_discussion"
-    for relative, template in STANDARD_FILES.items():
+    for relative, template in files.items():
         path = root / relative
         if path.exists():
             skipped.append(relative); continue
         if not dry_run:
             try:
                 path.parent.mkdir(parents=True, exist_ok=True)
-                rendered = template.format(project_name=name, date=date.today().isoformat(), git_state=git_state)
-                if relative == "docs/STATUS.md" and mode == "supplement":
+                rendered = template
+                if relative == ".gitignore" and visibility == "hybrid":
+                    rendered += f"\n{governance_dir.rstrip('/')}/\n"
+                if relative == "README.md" and visibility != "public":
+                    landing = f"{public_docs_dir}/INDEX.md" if visibility == "hybrid" else f"{governance_dir}/INDEX.md"
+                    rendered = f"# {name}\n\nStart with [{landing}]({landing}).\n"
+                if visibility != "public" and relative not in {"README.md", ".gitignore", ".project-governance.toml"}:
+                    rendered = rendered.replace("docs/", f"{governance_dir}/")
+                rendered = rendered.format(project_name=name, date=date.today().isoformat(), git_state=git_state, profile=profile, collaboration_mode=collaboration_mode, visibility=visibility, governance_dir=governance_dir, public_docs_dir=public_docs_dir)
+                if mode == "supplement" and relative.endswith("STATUS.md"):
                     rendered = rendered.replace("project_stage: requirements_discussion", "project_stage: adoption_review", 1)
                 path.write_text(rendered, encoding="utf-8")
             except OSError as exc:
                 errors[relative] = str(exc)
                 continue
         created.append(relative)
-    if mode == "supplement" and (root / "docs/STATUS.md").exists() and "docs/STATUS.md" in skipped:
-        existing_status = (root / "docs/STATUS.md").read_text(encoding="utf-8")
-        if "project_stage:" in existing_status:
-            match = __import__("re").search(r"(?im)^\s*project_stage\s*:\s*([^\s]+)", existing_status)
-            project_stage = match.group(1) if match else "adoption_review"
-    return ScaffoldResult(tuple(created), tuple(skipped), git_state, project_stage, errors)
+    project_stage = "adoption_review" if mode == "supplement" else "requirements_discussion"
+    status_path = root / governance_dir / "STATUS.md"
+    if mode == "supplement" and status_path in [root / item for item in skipped]:
+        existing = status_path.read_text(encoding="utf-8") if status_path.exists() else ""
+        match = __import__("re").search(r"(?im)^\s*project_stage\s*:\s*([^\s]+)", existing)
+        project_stage = match.group(1) if match else project_stage
+    return ScaffoldResult(tuple(created), tuple(skipped), git_state, project_stage, errors, profile, collaboration_mode, visibility, governance_dir, public_docs_dir)
 
 _MAPPINGS = {"docs/coding/PRD.md": "requirements_index", "docs/coding/TSD.md": "design_index", "docs/coding/DESIGN.md": "ui_design_index", "docs/coding/API.md": "api_contract_index"}
 def adopt_project(root: str | Path) -> AdoptionReport:
@@ -130,21 +198,7 @@ def adopt_project(root: str | Path) -> AdoptionReport:
     candidates = tuple(item.as_dict() for item in scan_project(root))
     try:
         git_context = inspect_git(root)
-        git = {
-            "available": True,
-            "branch": git_context.branch,
-            "head": git_context.head,
-            "dirty": git_context.dirty,
-            "recent_commits": list(git_context.recent_commits),
-            "worktrees": [dict(item) for item in git_context.worktrees],
-        }
+        git = {"available": True, "branch": git_context.branch, "head": git_context.head, "dirty": git_context.dirty, "recent_commits": list(git_context.recent_commits), "worktrees": [dict(item) for item in git_context.worktrees]}
     except ValueError:
-        git = {
-            "available": False,
-            "branch": "unavailable",
-            "head": "unavailable",
-            "dirty": False,
-            "recent_commits": [],
-            "worktrees": [],
-        }
+        git = {"available": False, "branch": "unavailable", "head": "unavailable", "dirty": False, "recent_commits": [], "worktrees": []}
     return AdoptionReport(existing, missing, mappings, candidates, DEFAULT_SCAN_ROOTS, DEFAULT_EXCLUDE_PATTERNS, git)

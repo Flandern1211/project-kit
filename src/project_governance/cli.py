@@ -42,6 +42,10 @@ def _parser() -> argparse.ArgumentParser:
     init.add_argument("--project-name")
     init.add_argument("--profile", default="standard")
     init.add_argument("--mode", choices=("new", "supplement"), default="new")
+    init.add_argument("--collaboration-mode", default="single-agent")
+    init.add_argument("--visibility", default="public")
+    init.add_argument("--governance-dir")
+    init.add_argument("--public-docs-dir")
     init.add_argument("--dry-run", action="store_true")
     init.add_argument("--json", action="store_true")
 
@@ -82,27 +86,12 @@ def _parser() -> argparse.ArgumentParser:
 
     migrate = commands.add_parser("migrate", help="plan and apply document migration")
     migrate_commands = migrate.add_subparsers(dest="migrate_action", required=True)
-
     plan = migrate_commands.add_parser("plan", help="scan and create a migration plan")
-    plan.add_argument("--root", default=".")
-    plan.add_argument("--scan-root", action="append", default=[])
-    plan.add_argument("--exclude", action="append", default=[])
-    plan.add_argument("--dry-run", action="store_true")
-    plan.add_argument("--json", action="store_true")
-
+    plan.add_argument("--root", default="."); plan.add_argument("--scan-root", action="append", default=[]); plan.add_argument("--exclude", action="append", default=[]); plan.add_argument("--dry-run", action="store_true"); plan.add_argument("--json", action="store_true")
     approve = migrate_commands.add_parser("approve", help="approve migration plan items")
-    approve.add_argument("migration_id")
-    approve.add_argument("--root", default=".")
-    approve.add_argument("--item", action="append", default=[])
-    approve.add_argument("--exclude-item", action="append", default=[])
-    approve.add_argument("--json", action="store_true")
-
+    approve.add_argument("migration_id"); approve.add_argument("--root", default="."); approve.add_argument("--item", action="append", default=[]); approve.add_argument("--exclude-item", action="append", default=[]); approve.add_argument("--json", action="store_true")
     apply = migrate_commands.add_parser("apply", help="apply approved migration items")
-    apply.add_argument("migration_id")
-    apply.add_argument("--root", default=".")
-    apply.add_argument("--item", action="append", default=[])
-    apply.add_argument("--dry-run", action="store_true")
-    apply.add_argument("--json", action="store_true")
+    apply.add_argument("migration_id"); apply.add_argument("--root", default="."); apply.add_argument("--item", action="append", default=[]); apply.add_argument("--dry-run", action="store_true"); apply.add_argument("--json", action="store_true")
     return parser
 
 
@@ -168,7 +157,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     root = _root(args.root)
     try:
         if args.command == "init":
-            result = init_project(root, project_name=args.project_name, profile=args.profile, mode=args.mode, dry_run=args.dry_run)
+            result = init_project(root, project_name=args.project_name, profile=args.profile, mode=args.mode, collaboration_mode=args.collaboration_mode, visibility=args.visibility, governance_dir=args.governance_dir, public_docs_dir=args.public_docs_dir, dry_run=args.dry_run)
             _emit(result.as_dict(), as_json=args.json)
             return 0
         if args.command == "adopt":
@@ -225,21 +214,14 @@ def main(argv: Sequence[str] | None = None) -> int:
                 path = create_migration_plan(root, candidates, scan_roots=args.scan_root, exclude_patterns=args.exclude, dry_run=args.dry_run)
                 migration_id = path.name.split("-migration-plan", 1)[0]
                 payload = {"migration_id": migration_id, "path": path.relative_to(root).as_posix(), "dry_run": args.dry_run}
-                if not args.dry_run:
-                    payload["entries"] = [entry.as_dict() for entry in load_migration_plan(root, migration_id).entries]
-                else:
-                    payload["entries"] = [candidate.as_dict() for candidate in candidates]
-                _emit(payload, as_json=args.json)
-                return 0
+                payload["entries"] = [candidate.as_dict() for candidate in candidates] if args.dry_run else [entry.as_dict() for entry in load_migration_plan(root, migration_id).entries]
+                _emit(payload, as_json=args.json); return 0
             if args.migrate_action == "approve":
                 path = approve_migration(root, args.migration_id, item_ids=args.item or None, exclude_item_ids=args.exclude_item)
                 plan = load_migration_plan(root, args.migration_id)
-                _emit({"migration_id": args.migration_id, "path": path.relative_to(root).as_posix(), "approval": plan.approval, "entries": [entry.as_dict() for entry in plan.entries]}, as_json=args.json)
-                return 0
+                _emit({"migration_id": args.migration_id, "path": path.relative_to(root).as_posix(), "approval": plan.approval, "entries": [entry.as_dict() for entry in plan.entries]}, as_json=args.json); return 0
             if args.migrate_action == "apply":
-                result = apply_migration(root, args.migration_id, item_ids=args.item or None, dry_run=args.dry_run)
-                _emit(result.as_dict(), as_json=args.json)
-                return 0
+                _emit(apply_migration(root, args.migration_id, item_ids=args.item or None, dry_run=args.dry_run).as_dict(), as_json=args.json); return 0
         parser.error(f"unknown command: {args.command}")
     except (OSError, ValueError) as exc:
         print(f"pgk: {exc}", file=__import__("sys").stderr)

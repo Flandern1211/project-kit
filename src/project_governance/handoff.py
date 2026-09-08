@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Sequence
 
 from .frontmatter import FrontmatterError, parse_frontmatter
+from .config import load_config
 from .git_context import GitContext, inspect_git
 from .models import RecordType, Status
 from .records import append_activity, update_indexes, update_work_index
@@ -27,9 +28,10 @@ def _validate_handoff_value(value: str, *, field: str) -> str:
 
 
 def _work_record(root: Path, task_id: str) -> Path:
+    governance = root / load_config(root / ".project-governance.toml").governance_dir
     candidates = sorted(
-        list((root / "docs/work/tasks").glob("*.md"))
-        + list((root / "docs/work/bugs").glob("*.md"))
+        list((governance / "work/tasks").glob("*.md"))
+        + list((governance / "work/bugs").glob("*.md"))
     )
     for path in candidates:
         try:
@@ -215,7 +217,7 @@ def update_handoff(
         # unmarked project-owned view cannot leave a partial handoff.
         update_work_index(root, dry_run=True)
         update_indexes(root, dry_run=True)
-        activity_path = root / "docs/activity/ACTIVITY.md"
+        activity_path = root / load_config(root / ".project-governance.toml").governance_dir / "activity/ACTIVITY.md"
         if activity_path.exists() and "<!-- PGK_GENERATED: activity -->" not in activity_path.read_text(encoding="utf-8"):
             raise FileExistsError(f"refusing to overwrite project-owned view: {activity_path}")
         record.write_text(updated, encoding="utf-8")

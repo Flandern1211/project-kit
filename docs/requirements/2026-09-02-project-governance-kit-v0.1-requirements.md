@@ -3,7 +3,7 @@ id: REQ-001
 type: requirement
 status: accepted
 created: 2026-09-02
-updated: 2026-09-03
+updated: 2026-09-07
 related:
   - REQ-001-ZH
 ---
@@ -14,7 +14,7 @@ related:
 
 - Document status: accepted
 - Kit version: 0.1
-- Revision date: 2026-09-03
+- Revision date: 2026-09-07
 
 ## 1. Product goal
 
@@ -53,13 +53,40 @@ a web administration interface or hosted collaboration service.
 ### 2.4 Git collaboration
 
 The project uses Git for code and governance documents. An implementable task
-normally maps to one task branch. Parallel Agents use isolated worktrees and
-record branch, worktree, owner, and file scope in the task record.
+normally maps to one task branch. v0.1 supports a single Agent and sequential
+handoffs across sessions first. Parallel Agents, worktree coordination, file
+scope locking, and automatic merging are deferred extensions, not v0.1 core.
+
+### 2.5 Governance profiles and collaboration modes (2026-09-07)
+
+- Governance profiles are Lite, Standard, and Strict. A profile controls
+  documentation and check depth, not the number of runtime or integration
+  features.
+- Collaboration mode is independent of the profile: `single-agent`,
+  `sequential-agents`, or `parallel-agents`.
+- v0.1 implements only `single-agent` and `sequential-agents`.
+- GitHub/Issue, web administration, model calls, and automatic
+  commit/push/PR/release are optional future extensions.
+- An Agent may propose profile or module changes but may not change governance
+  silently. A governance change requires a proposal, impact analysis, user
+  confirmation, and history preservation.
+- Governance visibility is independent and may be `team-private`, `hybrid`, or
+  `public`. Team-private mode relies on a private Git repository; hybrid mode
+  separates public documentation from complete governance records.
+- The Kit does not change GitHub/GitLab permissions or automatically delete,
+  migrate, or rewrite existing records. Public release uses a reviewable
+  sanitized copy or a separate public repository.
+- [ADR-0002](../decisions/ADR-0002-governance-profiles-and-v0-1-scope.md)
+  records this revision and takes precedence over the older parallel-work
+  wording.
 
 ## 3. Initialization output
 
-Initialization creates at least the following files and directories in a new
-project. Every directory has an index or placeholder so Git can track it:
+Initialization creates files and directories according to the selected profile.
+The following tree is the Standard baseline; Lite may create only the core,
+requirements, task, and verification entries, while Strict enables additional
+risk, security, release, and incident records. Every directory has an index or
+placeholder so Git can track it:
 
 ```text
 AGENTS.md
@@ -226,12 +253,11 @@ the Kit does not claim to block every external command.
 - After task acceptance, an Agent may create and record a local task branch.
 - Default feature branch: `task/<TASK-ID>-<slug>`; default bug branch:
   `bug/<BUG-ID>-<slug>`. Prefixes are project-configurable.
-- Parallel Agents use isolated worktrees under the default project-local
-  `.worktrees/` directory.
-- Serial single-Agent development requires a task branch but not another
-  worktree.
-- A task records `branch`, `worktree`, `owner`, and `files`; conflicting file
-  scopes require the Agent to stop and report the conflict.
+- v0.1 serial single-Agent development uses a task branch and does not require
+  another worktree. Parallel-Agent worktrees, file-scope locking, and conflict
+  coordination are deferred extensions.
+- A task records applicable `branch`, `owner`, and `files`; `worktree` is
+  reserved for the future parallel extension.
 - Non-implementation records may use `N/A` or an upstream reference for
   branch/worktree/HEAD instead of inventing Git state.
 
@@ -278,8 +304,9 @@ Project stage and individual record state are separate:
   `in_review`, `blocked`, `verified`, `done`, `rejected`, and `superseded`;
   each record type may restrict the subset it uses.
 
-Multiple tasks, bugs, and worktrees may be active. `STATUS.md` describes the
-global stage and current focus; `BOARD.md` shows all records.
+Multiple tasks, bugs, and worktrees may be active in a future parallel mode.
+v0.1 focuses on serial single-Agent work. `STATUS.md` describes the global
+stage and current focus; `BOARD.md` shows all records.
 
 ### 7.1 Minimum visualization contract
 
@@ -325,9 +352,10 @@ duplicate record bodies; activity logs contain governance events only.
 
 ### FR-05 Git collaboration
 
-The Kit records relationships between tasks, branches, worktrees, commits,
-reviews, merges, and public-action evidence. It reports dirty worktrees,
-unregistered branches, conflicting file scopes, and missing record links.
+The Kit records relationships between tasks, branches, commits, reviews, and
+public-action evidence. It reports dirty worktrees, unregistered branches, and
+missing record links. Worktree coordination, file-scope conflicts, and merge
+relationships are reserved for the future parallel-Agent extension.
 
 ### FR-06 User-authorization gate
 
@@ -373,8 +401,8 @@ authorization state, and next action from project documents and Git state.
 - AC-07: before implementation, an Agent checks upstream records/state and
   stops with a recorded blocker when acceptance is missing.
 - AC-08: STATUS, BOARD, WORKFLOW, and ACTIVITY satisfy Section 7.1.
-- AC-09: task, branch, worktree, and commit relationships are traceable, and
-  conflicting file scopes are detectable.
+- AC-09: v0.1 traces task, branch, and commit relationships. Worktree and file
+  scope-conflict checks are reserved for the future parallel-Agent extension.
 - AC-10: without matching user authorization, a compliant Agent integration
   does not execute commit, push, Issue/PR, merge, tag, release, or deletion;
   the core CLI never executes these actions.
@@ -393,8 +421,15 @@ authorization state, and next action from project documents and Git state.
 - `pgk init` creates files only and does not run `git init`, commit, push,
   merge, or remote operations by default.
 - Without Git, the Agent obtains user confirmation before running `git init`.
-- An accepted task may create a local branch; only parallel development uses
-  an isolated worktree by default.
+- An accepted task may create a local branch. v0.1 serial development does not
+  require another worktree; parallel development and worktree coordination are
+  deferred.
+- Governance profiles are Lite, Standard, and Strict. Collaboration mode is
+  independent and v0.1 supports only single-agent and sequential-agents.
+- An Agent may propose governance changes but needs user confirmation before
+  changing governance configuration.
+- Visibility changes require a previewable report; `.gitignore` cannot erase
+  records already present in public Git history.
 - Commit, push, Issue/PR, merge, tag, release, and deletion default to
   per-action confirmation. Explicit task/session authorization names action,
   target, and expiry and does not expand to adjacent actions.

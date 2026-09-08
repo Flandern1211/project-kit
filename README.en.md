@@ -10,11 +10,7 @@ The toolkit is independent of a project's programming language, framework,
 issue tracker, or model provider. It generates ordinary Markdown/TOML files
 and provides offline validation.
 
-## Current scope
-
-The current development version is `0.2.0.dev0`. It includes v0.1 new-project initialization and the v0.2 existing-project migration MVP.
-
-v0.1 includes:
+## v0.1 scope
 
 - initialize or inspect a project governance structure;
 - create requirement, design, decision, task, bug, and verification records;
@@ -23,12 +19,16 @@ v0.1 includes:
 - inspect Git branches, commits, and worktree state;
 - update a task's cross-session handoff section.
 
-v0.2 includes:
+Governance profiles are `lite`, `standard`, and `strict`; they control the
+depth of documentation and checks. Collaboration mode is independent of the
+profile. v0.1 supports `single-agent` and `sequential-agents`; parallel Agent
+coordination is deferred.
 
-- supplement an existing project with missing governance files;
-- scan existing Markdown/plain-text documents and create a migration plan;
-- create source-hashed governance drafts only after explicit approval;
-- preserve original files and report sensitive content, conflicts, source changes, and failures.
+Governance visibility is independent and can be `team-private`, `hybrid`, or
+`public`. Teams should keep complete governance records in a private Git
+repository; public releases should use a reviewed sanitized copy or a separate
+public repository. The Kit does not change GitHub permissions or rewrite
+existing history.
 
 GitHub Issues and pull requests remain discussion, review, and merge entry
 points. Repository Markdown is the durable source of truth.
@@ -52,6 +52,20 @@ pgk init --root . --project-name MyProject
 pgk check --root .
 ```
 
+Choose a governance profile and, when needed, sequential handoffs:
+
+```powershell
+pgk init --root . --profile lite
+pgk init --root . --profile standard --collaboration-mode sequential-agents
+pgk init --root . --profile strict
+pgk init --root . --profile standard --visibility team-private
+pgk init --root . --profile standard --visibility hybrid
+```
+
+Lite creates the core requirements, task, bug, and verification structure;
+Standard creates the complete governance skeleton; Strict adds risk, security,
+and release indexes.
+
 Recommended first-agent flow: read `AGENTS.md`, `docs/INDEX.md`, and
 `docs/STATUS.md`, then run `pgk doctor --root . --json`. After the user accepts
 the requirements, create the REQ → DES/ADR → TASK → REVIEW → VER records and
@@ -64,13 +78,7 @@ For an existing project, inspect it first with read-only commands:
 ```powershell
 pgk adopt --root C:\path\to\project --json
 pgk doctor --root C:\path\to\project
-pgk init --root C:\path\to\project --mode supplement
-pgk migrate plan --root C:\path\to\project --json
-pgk migrate approve MIG-001 --root C:\path\to\project --json
-pgk migrate apply MIG-001 --root C:\path\to\project --json
 ```
-
-Migration preserves the original files and creates `draft` copies under the standard governance directories. Unapproved items are not written, and conflicts never overwrite existing files.
 
 Create a task and hand it between agents or sessions:
 
@@ -95,14 +103,24 @@ pgk check      validate documents, links, and status
 pgk new        create a governance record
 pgk index      update the work index
 pgk handoff    update task handoff information
-pgk migrate    plan, approve, and apply document migration
 ```
 
 ## Status
 
-The current version is the pre-release `0.2.0.dev0`. The toolkit repository
+The current version is the pre-release `0.1.0.dev0`. The toolkit repository
 dogfoods its own governance architecture, and TouzhiAgent is its first
 external trial project.
+
+This task branch also contains the v0.2 existing-project migration MVP:
+
+```powershell
+pgk init --root C:\path\to\project --mode supplement
+pgk migrate plan --root C:\path\to\project --json
+pgk migrate approve MIG-001 --root C:\path\to\project --json
+pgk migrate apply MIG-001 --root C:\path\to\project --json
+```
+
+Migration preserves originals and creates source-hashed `draft` governance copies. Unapproved items are not written, and conflicts or sensitive content are never copied or overwritten.
 
 ## Documentation
 

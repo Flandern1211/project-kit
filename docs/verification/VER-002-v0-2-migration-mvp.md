@@ -7,7 +7,7 @@ updated: 2026-09-08
 related:
   - REQ-002-ZH
   - DES-003-ZH
-  - TASK-006
+  - TASK-011
 ---
 
 # v0.2 migration MVP verification

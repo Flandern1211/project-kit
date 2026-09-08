@@ -1,5 +1,5 @@
 ---
-id: TASK-006
+id: TASK-011
 type: task
 status: verified
 created: 2026-09-07

@@ -4,28 +4,32 @@
 status: verified
 project_stage: active_development
 version: 0.2.0.dev0
-active_task: TASK-006
+active_task: TASK-011
 current_requirement: REQ-002-ZH
 current_design: DES-003-ZH
-current_task: TASK-006
+current_task: TASK-011
 owner: root
-blocker: none
-next_action: review the complete v0.2 diff and authorize any specific Git action
+blocker: merged-result Git state is uncommitted; push remains user-controlled
+next_action: review merge commit and decide whether to push main
 git_state: git_initialized
 updated: 2026-09-08
 ```
 
 ## Current scope
 
-The v0.1 requirements and DES-002-ZH technical design baselines are accepted.
-Implementation now covers the new-project initialization skeleton, document
-chain, Markdown/Mermaid views, Git collaboration records, authorization gates,
-and fixture-based acceptance. Protected Git and remote actions still require
-explicit user approval.
+The v0.1 requirements and DES-002-ZH technical design baselines remain accepted,
+with the 2026-09-07 governance profile and scope revision recorded by ADR-0002.
+The revision makes single-Agent and sequential handoff the v0.1 collaboration
+core; parallel Agent coordination and external integrations are deferred.
+The existing implementation baseline is unchanged by this documentation task.
+The newly accepted Lite/Standard/Strict profile behavior and collaboration-mode
+configuration are documented scope, not yet claimed as implemented runtime behavior.
+Protected Git and remote actions still require explicit user approval.
 
-REQ-002-ZH and DES-003-ZH are accepted. TASK-006 and VER-002 are verified.
-v0.2 adds existing-project adoption and migration without changing the v0.1
-acceptance baseline.
+REQ-002-ZH and DES-003-ZH define the v0.2 existing-project migration MVP.
+TASK-011 was locally verified before synchronizing with `origin/main`; the
+combined profile, visibility and migration implementation passed merged-result
+verification.
 
 ## Known constraints
 
@@ -37,15 +41,23 @@ acceptance baseline.
 ## Verification snapshot
 
 - clean fresh-project fixture `pgk check --root <fixture-copy> --json`: `ok=true`, no issues;
-- current worktree is an isolated `task/TASK-006-v02-migration` branch;
-- baseline pytest first hit Windows WinError 5 in the system temporary root; the final 120-test run used a worktree-local basetemp;
+- current working checkout `pgk check` reports only existing dirty-worktree and
+  user-owned unregistered-branch state;
 - editable package installation and `pgk --help`: passed;
 - empty-project `pgk init`, `pgk check`, and `pgk new --dry-run`: passed;
 - TouzhiAgent `pgk adopt`: read-only mapping report produced, no files changed;
 - 86-test suite, compile check, project-document validator, and fresh-project
   acceptance fixture: passed; see [VER-001](verification/VER-001-v0-1-new-project-baseline.md).
+- current profile implementation regression suite: 92 tests passed; compileall and
+  diff-check passed. `pgk check` still reports only existing Git-state issues.
+- visibility implementation regression suite: 101 tests passed; real-project
+  team-private/hybrid/public initialization and checks passed.
+- merged profile, visibility and migration suite: 120 tests passed; compileall
+  and diff-check passed; worktree-local pgk check reports only dirty worktree state.
 
 ## Next action
 
-TASK-005 remains verified. TASK-006 is locally verified; review its complete
-diff before authorizing protected Git actions.
+TASK-007 profile implementation and TASK-008 bilingual README synchronization are verified.
+TASK-009 visibility design, TASK-010 implementation, and TASK-011 migration
+implementation are verified in the merged result. Review the merge commit
+before authorizing push to main.

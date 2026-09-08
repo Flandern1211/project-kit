@@ -8,9 +8,11 @@ import re
 import subprocess
 
 from .authorization import _authorization_fields, _when
+from .config import default_visibility_dirs, load_config
 from .frontmatter import FrontmatterError, parse_frontmatter
 from .git_context import inspect_git
 from .migration import _normalize_generated, _render_governance_copy, load_migration_plan
+from .scaffold import required_artifacts_for_profile
 
 BASELINE = ("AGENTS.md", "README.md", ".gitignore", ".project-governance.toml", "CONTRIBUTING.md", "CHANGELOG.md", "docs/INDEX.md", "docs/STATUS.md")
 REQUIRED_VIEWS = ("docs/STATUS.md", "docs/WORKFLOW.md", "docs/work/BOARD.md", "docs/activity/ACTIVITY.md")
@@ -38,6 +40,11 @@ VIEW_MARKERS = {
 RECORD_INDEXES = {
     "requirement": "docs/requirements/INDEX.md", "design": "docs/design/INDEX.md", "decision": "docs/decisions/INDEX.md",
     "task": "docs/work/tasks/INDEX.md", "bug": "docs/work/bugs/INDEX.md", "review": "docs/reviews/INDEX.md", "verification": "docs/verification/INDEX.md", "migration": "docs/migrations/INDEX.md",
+}
+PROFILE_RECORD_INDEXES = {
+    "lite": {"requirement": RECORD_INDEXES["requirement"], "task": RECORD_INDEXES["task"], "bug": RECORD_INDEXES["bug"], "verification": RECORD_INDEXES["verification"]},
+    "standard": RECORD_INDEXES,
+    "strict": RECORD_INDEXES,
 }
 PROJECT_STAGES = {"initialized", "requirements_discussion", "requirements_review", "adoption_review", "active_development", "maintenance", "blocked"}
 RECORD_ID_RE = re.compile(r"^(REQ|DES|ADR|TASK|BUG|REVIEW|VER|INC|MIG)-[A-Za-z0-9][A-Za-z0-9._-]*$")
@@ -121,9 +128,47 @@ def _check_authorization(path: str, text: str, issues: list[dict[str, str]]) -> 
 
 def run_checks(root: str | Path) -> CheckResult:
     root = Path(root); issues: list[dict[str, str]] = []
+    profile = "standard"
+    visibility = "public"
+    governance_dir = Path("docs")
+    public_docs_dir = Path("docs")
+    try:
+        config = load_config(root / ".project-governance.toml")
+        profile = config.profile
+        visibility = config.visibility
+        governance_dir = Path(config.governance_dir)
+        public_docs_dir = Path(config.public_docs_dir)
+    except (OSError, ValueError) as exc:
+        code = "invalid_visibility" if "visibility" in str(exc).lower() else "invalid_config"
+        _issue(issues, code, ".project-governance.toml", str(exc))
+    record_indexes = {kind: (governance_dir / Path(path).relative_to(Path("docs"))).as_posix() for kind, path in RECORD_INDEXES.items()}
+    required_views = tuple((governance_dir / Path(path).relative_to(Path("docs"))).as_posix() for path in REQUIRED_VIEWS)
+    baseline = tuple(
+        (governance_dir / Path(item).relative_to(Path("docs"))).as_posix()
+        if visibility != "public" and item.startswith("docs/") else item
+        for item in BASELINE
+    )
+    required_artifacts = tuple((governance_dir / Path(path).relative_to(Path("docs"))).as_posix() if path.startswith("docs/") else path for path in required_artifacts_for_profile(profile))
     ignored_dirs = {".git", ".agent", ".pytest-tmp", ".pytest_cache", ".superpowers", ".worktrees", ".venv", ".mypy_cache", ".ruff_cache", "node_modules", "dist", "build", ".tmp", "tmp", "temp"}
     files = sorted(path for path in root.rglob("*.md") if not any(part in ignored_dirs or part.startswith(".pytest-tmp") for part in path.relative_to(root).parts))
     checked_files = tuple(path.relative_to(root).as_posix() for path in files)
+    if visibility != "public":
+        public_root = root / public_docs_dir
+        if public_root.exists():
+            for path in sorted(public_root.rglob("*.md")):
+                try:
+                    metadata, _body = parse_frontmatter(path.read_text(encoding="utf-8"))
+                except (OSError, FrontmatterError):
+                    continue
+                if metadata.type.value in {"requirement", "design", "decision", "task", "bug", "review", "verification"}:
+                    relative = path.relative_to(root).as_posix()
+                    _issue(issues, "public_governance_path", relative, f"governance record is in public docs path: {relative}")
+    if visibility == "hybrid":
+        ignore_path = root / ".gitignore"
+        ignore_text = ignore_path.read_text(encoding="utf-8") if ignore_path.exists() else ""
+        normalized_ignore = {line.strip().replace("\\", "/").rstrip("/") for line in ignore_text.splitlines()}
+        if governance_dir.as_posix().rstrip("/") not in normalized_ignore:
+            _issue(issues, "missing_visibility_ignore", ".gitignore", f"hybrid visibility requires an ignore rule for {governance_dir.as_posix()}/")
     ids: dict[str, str] = {}; records: list[tuple[str, object, str, str]] = []
     for path in files:
         relative = path.relative_to(root).as_posix(); text = path.read_text(encoding="utf-8"); metadata = None; body = text
@@ -144,7 +189,7 @@ def run_checks(root: str | Path) -> CheckResult:
                     if not RECORD_ID_RE.fullmatch(related): _issue(issues, "invalid_related_id", relative, f"invalid related id: {related}")
                 if metadata.id in ids: _issue(issues, "duplicate_id", relative, f"duplicate id: {metadata.id}")
                 ids[metadata.id] = relative; records.append((relative, metadata, body, text)); _check_authorization(relative, text, issues)
-                canonical_record = relative.startswith("docs/work/tasks/") or relative.startswith("docs/work/bugs/")
+                canonical_record = relative.startswith(f"{governance_dir.as_posix()}/work/tasks/") or relative.startswith(f"{governance_dir.as_posix()}/work/bugs/")
                 if canonical_record and metadata.type.value in {"task", "bug"}:
                     sections = _body_sections(body)
                     for required in ("owner", "scope", "files", "evidence", "blockers", "next action", "git"):
@@ -187,18 +232,20 @@ def run_checks(root: str | Path) -> CheckResult:
         for target in re.findall(r"\[[^]]*\]\(([^)]+)\)", text):
             target = target.split("#", 1)[0]
             if target and not re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*:", target) and not (path.parent / target).exists(): _issue(issues, "broken_link", relative, f"broken link: {target}")
-    for relative in BASELINE:
+    for relative in baseline:
         if not (root / relative).exists(): _issue(issues, "missing_baseline", relative, f"missing required file: {relative}")
-    status_text = (root / "docs/STATUS.md").read_text(encoding="utf-8") if (root / "docs/STATUS.md").exists() else ""
+    status_text = (root / governance_dir / "STATUS.md").read_text(encoding="utf-8") if (root / governance_dir / "STATUS.md").exists() else ""
     generated_project = bool(re.search(r"(?im)^\s*project_stage\s*:", status_text))
     governed_project = generated_project or (root / ".project-governance.toml").exists() or any("PGK_GENERATED:" in path.read_text(encoding="utf-8") for path in files)
     if governed_project:
-        for relative in REQUIRED_ARTIFACTS:
+        for relative in required_artifacts:
             if not (root / relative).exists():
-                _issue(issues, "missing_required_artifact", relative, f"missing required scaffold artifact: {relative}")
-        for relative in REQUIRED_VIEWS:
+                code = "missing_required_artifact" if profile == "standard" else "missing_profile_artifact"
+                _issue(issues, code, relative, f"missing required {profile} profile artifact: {relative}")
+        for relative in required_views:
             if not (root / relative).exists(): _issue(issues, "missing_required_view", relative, f"missing required view: {relative}")
-        for kind, relative in RECORD_INDEXES.items():
+        for kind, _relative in PROFILE_RECORD_INDEXES[profile].items():
+            relative = record_indexes[kind]
             index = root / relative
             if not index.exists(): _issue(issues, "missing_record_index", relative, f"missing required record index: {relative}"); continue
             content = index.read_text(encoding="utf-8")
@@ -215,22 +262,15 @@ def run_checks(root: str | Path) -> CheckResult:
         try:
             plan = load_migration_plan(root, metadata.id)
         except (OSError, ValueError) as exc:
-            _issue(issues, "invalid_migration_item", relative, str(exc))
-            continue
-        allowed_statuses = {"candidate", "approved", "excluded", "applied", "needs_review", "conflict", "source_changed", "failed"}
+            _issue(issues, "invalid_migration_item", relative, str(exc)); continue
         for entry in plan.entries:
-            if entry.status not in allowed_statuses:
-                _issue(issues, "invalid_migration_item", relative, f"invalid migration item status: {entry.status}")
-                continue
             source = (root / entry.source_path).resolve()
             try:
                 source.relative_to(root.resolve())
             except ValueError:
-                _issue(issues, "invalid_migration_item", relative, f"migration source escapes project root: {entry.source_path}")
-                continue
+                _issue(issues, "invalid_migration_item", relative, f"migration source escapes project root: {entry.source_path}"); continue
             if not source.is_file():
-                _issue(issues, "missing_migration_source", relative, f"migration source is missing: {entry.source_path}")
-                continue
+                _issue(issues, "missing_migration_source", relative, f"migration source is missing: {entry.source_path}"); continue
             if entry.source_hash:
                 import hashlib
                 if hashlib.sha256(source.read_bytes()).hexdigest() != entry.source_hash:
@@ -242,14 +282,12 @@ def run_checks(root: str | Path) -> CheckResult:
                 try:
                     target.relative_to(root.resolve())
                 except ValueError:
-                    _issue(issues, "invalid_migration_item", relative, f"migration target escapes project root: {entry.target_path}")
-                    continue
+                    _issue(issues, "invalid_migration_item", relative, f"migration target escapes project root: {entry.target_path}"); continue
                 if entry.status == "applied" and not target.is_file():
                     _issue(issues, "migration_target_conflict", relative, f"applied migration target is missing: {entry.target_path}")
                 elif entry.status in {"approved", "applied"} and target.is_file() and not entry.sensitive:
                     try:
-                        source_text = source.read_text(encoding="utf-8")
-                        expected = _render_governance_copy(root, metadata.id, entry, source_text)
+                        expected = _render_governance_copy(root, metadata.id, entry, source.read_text(encoding="utf-8"))
                         if _normalize_generated(target.read_text(encoding="utf-8")) != _normalize_generated(expected):
                             _issue(issues, "migration_target_conflict", relative, f"migration target content differs: {entry.target_path}")
                     except (OSError, UnicodeDecodeError, ValueError):
@@ -264,45 +302,46 @@ def run_checks(root: str | Path) -> CheckResult:
         elif not any(item[1].status.value == "accepted" for item in reqs): _issue(issues, "unaccepted_upstream_record", relative, "related requirement is not accepted")
         if not designs: _issue(issues, "missing_upstream_record", relative, "actionable task requires an accepted design or decision")
         elif not any(item[1].status.value == "accepted" for item in designs): _issue(issues, "unaccepted_upstream_record", relative, "related design or decision is not accepted")
-    status_path = root / "docs/STATUS.md"
+    status_path = root / governance_dir / "STATUS.md"
     if status_path.exists():
         match = re.search(r"(?im)^\s*project_stage\s*:\s*([^\s]+)", status_text)
-        if governed_project and (not match or match.group(1) not in PROJECT_STAGES): _issue(issues, "invalid_project_stage", "docs/STATUS.md", "project_stage is missing or invalid")
+        if governed_project and (not match or match.group(1) not in PROJECT_STAGES): _issue(issues, "invalid_project_stage", (governance_dir / "STATUS.md").as_posix(), "project_stage is missing or invalid")
         if governed_project:
             for key in REQUIRED_STATUS_FIELDS:
-                if not re.search(rf"(?im)^\s*{key}\s*:", status_text): _issue(issues, "missing_status_field", "docs/STATUS.md", f"missing status field: {key}")
+                if not re.search(rf"(?im)^\s*{key}\s*:", status_text): _issue(issues, "missing_status_field", status_path.relative_to(root).as_posix(), f"missing status field: {key}")
     if governed_project:
-        for view in ("docs/WORKFLOW.md", "docs/work/BOARD.md"):
+        for view in (required_views[1], required_views[2]):
             view_path = root / view
             if view_path.exists() and "PGK_GENERATED:" not in view_path.read_text(encoding="utf-8"):
                 _issue(issues, "invalid_view_marker", view, "governance view is missing PGK_GENERATED marker")
-        for view, marker in ((relative, f"{kind}-index") for kind, relative in RECORD_INDEXES.items()):
-            view_path = root / view
+        for kind, relative in record_indexes.items():
+            marker = f"{kind}-index"
+            view_path = root / relative
             if view_path.exists() and f"<!-- PGK_GENERATED: {marker} -->" not in view_path.read_text(encoding="utf-8"):
                 _issue(issues, "invalid_view_marker", view, "record index is missing PGK_GENERATED marker")
-        work_index = root / "docs/work/INDEX.md"
+        work_index = root / governance_dir / "work/INDEX.md"
         if work_index.exists() and "<!-- PGK_GENERATED: work-index -->" not in work_index.read_text(encoding="utf-8"):
-            _issue(issues, "invalid_view_marker", "docs/work/INDEX.md", "work index is missing PGK_GENERATED marker")
-        activity_view = root / "docs/activity/ACTIVITY.md"
+                _issue(issues, "invalid_view_marker", (governance_dir / "work/INDEX.md").as_posix(), "work index is missing PGK_GENERATED marker")
+        activity_view = root / governance_dir / "activity/ACTIVITY.md"
         if activity_view.exists() and "<!-- PGK_GENERATED: activity -->" not in activity_view.read_text(encoding="utf-8"):
-            _issue(issues, "invalid_view_marker", "docs/activity/ACTIVITY.md", "activity view is missing PGK_GENERATED marker")
-        workflow = root / "docs/WORKFLOW.md"
+                _issue(issues, "invalid_view_marker", (governance_dir / "activity/ACTIVITY.md").as_posix(), "activity view is missing PGK_GENERATED marker")
+        workflow = root / governance_dir / "WORKFLOW.md"
         if workflow.exists():
             workflow_text = workflow.read_text(encoding="utf-8")
             if "active_development --> blocked" not in workflow_text or "blocked --> active_development" not in workflow_text:
-                _issue(issues, "invalid_workflow_contract", "docs/WORKFLOW.md", "workflow lacks blocked entry/recovery")
-        board = root / "docs/work/BOARD.md"
+                _issue(issues, "invalid_workflow_contract", (governance_dir / "WORKFLOW.md").as_posix(), "workflow lacks blocked entry/recovery")
+        board = root / governance_dir / "work/BOARD.md"
         if board.exists() and "| ID | type | status | owner | related | branch/worktree | verification | blocker | next |" not in board.read_text(encoding="utf-8"):
-                _issue(issues, "invalid_board_contract", "docs/work/BOARD.md", "board header is invalid")
+                _issue(issues, "invalid_board_contract", (governance_dir / "work/BOARD.md").as_posix(), "board header is invalid")
         if activity_view.exists() and "<!-- timestamp | actor | action | record_id | git_ref | result -->" not in activity_view.read_text(encoding="utf-8"):
-            _issue(issues, "invalid_activity_header", "docs/activity/ACTIVITY.md", "activity header is invalid")
-    activity = root / "docs/activity/ACTIVITY.md"
+                _issue(issues, "invalid_activity_header", (governance_dir / "activity/ACTIVITY.md").as_posix(), "activity header is invalid")
+    activity = root / governance_dir / "activity/ACTIVITY.md"
     if activity.exists():
         for number, line in enumerate(activity.read_text(encoding="utf-8").splitlines(), 1):
             if not line.strip() or line.lstrip().startswith(("#", "<!--")): continue
             fields = line.split(" | ")
             if len(fields) != 6 or any(not field.strip() for field in fields) or not re.match(r"^\d{4}-\d{2}-\d{2}(?:T|$)", fields[0].strip()):
-                _issue(issues, "invalid_activity_line", "docs/activity/ACTIVITY.md", f"line {number} must have six fields")
+                _issue(issues, "invalid_activity_line", (governance_dir / "activity/ACTIVITY.md").as_posix(), f"line {number} must have six fields")
     scopes: list[tuple[str, str, str]] = []; declared_branches: set[str] = set()
     active_records = {"in_progress", "in_review", "blocked"}
     for relative, metadata, body, _text in records:
@@ -344,7 +383,7 @@ def run_checks(root: str | Path) -> CheckResult:
         status_git = re.search(r"(?im)^\s*git_state\s*:\s*([^\s]+)", status_text)
         expected_git_state = "git_initialized" if same_repository else "git_not_initialized"
         if status_git and status_git.group(1) != expected_git_state:
-            _issue(issues, "git_state_mismatch", "docs/STATUS.md", f"status git_state is {status_git.group(1)}, expected {expected_git_state}")
+            _issue(issues, "git_state_mismatch", (governance_dir / "STATUS.md").as_posix(), f"status git_state is {status_git.group(1)}, expected {expected_git_state}")
     issues.sort(key=lambda item: (item["code"], item["path"], item["message"]))
     return CheckResult(not issues, tuple(issues), checked_files)
 

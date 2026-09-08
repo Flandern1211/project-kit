@@ -376,7 +376,7 @@ Prepare the check/CLI changes for review; do not run `git commit` without explic
 - Modify: `docs/INDEX.md`
 - Modify: `docs/STATUS.md`
 - Modify: `docs/work/BOARD.md`
-- Modify: `docs/work/tasks/TASK-006-implement-v0-2-existing-project-migration.md`
+- Modify: `docs/work/tasks/TASK-011-implement-v0-2-existing-project-migration.md`
 - Modify: `pyproject.toml`
 - Create: `docs/verification/VER-002-v0-2-migration-mvp.md`
 - Create: `tests/test_migration_acceptance.py`
@@ -387,7 +387,7 @@ Prepare the check/CLI changes for review; do not run `git commit` without explic
 - Document that original files remain in place, `MIG-*` is a candidate plan, `approve` is required before `apply`, and unsupported/sensitive files are report-only.
 - Add a fixture-based end-to-end test covering an existing Git project and a non-Git project: plan, no-op apply before approval, approval, copy, source preservation, index refresh, source-change detection, target conflict and `pgk check` evidence.
 - Create VER-002 with exact commands, test count, compile check, `git diff --check`, fixture results, known Windows pytest temp-directory workaround if it recurs, and explicit statements of what remains externally unverified.
-- Update TASK-006 from accepted to verified only after all code/tests/docs evidence is available. Keep v0.1 VER-001 unchanged.
+- Update TASK-011 from accepted to verified only after all code/tests/docs evidence is available. Keep v0.1 VER-001 unchanged.
 
 - [ ] **Step 1: Write the acceptance fixture tests**
 
@@ -436,7 +436,7 @@ Expected: all tests pass, compileall succeeds, diff check is clean, and the proj
 
 - [ ] **Step 5: Record verification and handoff**
 
-Write VER-002, update TASK-006 handoff with branch, HEAD, worktree, dirty state, test/compile/check evidence, unresolved external validation, and one next action. Update `docs/STATUS.md` and generated indexes only through their marked/generated paths.
+Write VER-002, update TASK-011 handoff with branch, HEAD, worktree, dirty state, test/compile/check evidence, unresolved external validation, and one next action. Update `docs/STATUS.md` and generated indexes only through their marked/generated paths.
 
 - [ ] **Step 6: Commit only after user authorization**
 
