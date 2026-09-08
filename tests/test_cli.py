@@ -84,7 +84,7 @@ def test_cli_index_json_refreshes_all_generated_views(tmp_path: Path, capsys):
     assert set(result["paths"]) == {
         "docs/requirements/INDEX.md", "docs/design/INDEX.md", "docs/decisions/INDEX.md",
         "docs/work/tasks/INDEX.md", "docs/work/bugs/INDEX.md", "docs/reviews/INDEX.md",
-        "docs/verification/INDEX.md", "docs/work/BOARD.md", "docs/work/INDEX.md",
+        "docs/verification/INDEX.md", "docs/migrations/INDEX.md", "docs/work/BOARD.md", "docs/work/INDEX.md",
     }
 
 

@@ -21,9 +21,10 @@ RECORD_DIRECTORIES = {
     RecordType.BUG: Path("docs/work/bugs"),
     RecordType.REVIEW: Path("docs/reviews"),
     RecordType.VERIFICATION: Path("docs/verification"),
+    RecordType.MIGRATION: Path("docs/migrations"),
 }
-RECORD_ID_PATTERN = re.compile(r"^(?:REQ|DES|ADR|PLAN|TASK|BUG|REVIEW|VER|INC)-[A-Za-z0-9][A-Za-z0-9._-]*$")
-RECORD_PREFIXES = {RecordType.REQUIREMENT: "REQ-", RecordType.DESIGN: "DES-", RecordType.DECISION: "ADR-", RecordType.TASK: "TASK-", RecordType.BUG: "BUG-", RecordType.REVIEW: "REVIEW-", RecordType.VERIFICATION: "VER-"}
+RECORD_ID_PATTERN = re.compile(r"^(?:REQ|DES|ADR|PLAN|TASK|BUG|REVIEW|VER|INC|MIG)-[A-Za-z0-9][A-Za-z0-9._-]*$")
+RECORD_PREFIXES = {RecordType.REQUIREMENT: "REQ-", RecordType.DESIGN: "DES-", RecordType.DECISION: "ADR-", RecordType.TASK: "TASK-", RecordType.BUG: "BUG-", RecordType.REVIEW: "REVIEW-", RecordType.VERIFICATION: "VER-", RecordType.MIGRATION: "MIG-"}
 
 
 class DuplicateRecordError(FileExistsError):
@@ -180,6 +181,7 @@ _INDEXES = {
     RecordType.BUG: Path("docs/work/bugs/INDEX.md"),
     RecordType.REVIEW: Path("docs/reviews/INDEX.md"),
     RecordType.VERIFICATION: Path("docs/verification/INDEX.md"),
+    RecordType.MIGRATION: Path("docs/migrations/INDEX.md"),
 }
 
 

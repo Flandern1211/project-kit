@@ -3,7 +3,7 @@ from string import Template
 from .frontmatter import render_frontmatter
 from .models import RecordMetadata
 
-TYPES = ("requirement", "design", "decision", "task", "bug", "review", "verification")
+TYPES = ("requirement", "design", "decision", "task", "bug", "review", "verification", "migration")
 def template_path(kind: str, directory: Path | None = None) -> Path:
     if kind not in TYPES: raise ValueError(f"unsupported record type: {kind}")
     base = directory or Path(__file__).with_name("templates")

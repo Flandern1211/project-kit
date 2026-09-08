@@ -2,17 +2,17 @@
 
 ```yaml
 status: verified
-project_stage: maintenance
-version: 0.1.0.dev0
-active_task: none
-current_requirement: REQ-001-ZH
-current_design: DES-002-ZH
-current_task: none
+project_stage: active_development
+version: 0.2.0.dev0
+active_task: TASK-006
+current_requirement: REQ-002-ZH
+current_design: DES-003-ZH
+current_task: TASK-006
 owner: root
-blocker: expected dirty worktree before user-authorized commit
-next_action: review the v0.1 baseline and decide whether to authorize a commit
+blocker: none
+next_action: review the complete v0.2 diff and authorize any specific Git action
 git_state: git_initialized
-updated: 2026-09-04
+updated: 2026-09-08
 ```
 
 ## Current scope
@@ -22,6 +22,10 @@ Implementation now covers the new-project initialization skeleton, document
 chain, Markdown/Mermaid views, Git collaboration records, authorization gates,
 and fixture-based acceptance. Protected Git and remote actions still require
 explicit user approval.
+
+REQ-002-ZH and DES-003-ZH are accepted. TASK-006 and VER-002 are verified.
+v0.2 adds existing-project adoption and migration without changing the v0.1
+acceptance baseline.
 
 ## Known constraints
 
@@ -33,7 +37,8 @@ explicit user approval.
 ## Verification snapshot
 
 - clean fresh-project fixture `pgk check --root <fixture-copy> --json`: `ok=true`, no issues;
-- current working checkout `pgk check --root . --json`: reports only the expected dirty-worktree state before commit;
+- current worktree is an isolated `task/TASK-006-v02-migration` branch;
+- baseline pytest first hit Windows WinError 5 in the system temporary root; the final 120-test run used a worktree-local basetemp;
 - editable package installation and `pgk --help`: passed;
 - empty-project `pgk init`, `pgk check`, and `pgk new --dry-run`: passed;
 - TouzhiAgent `pgk adopt`: read-only mapping report produced, no files changed;
@@ -42,5 +47,5 @@ explicit user approval.
 
 ## Next action
 
-TASK-005 is verified. The next action is to create a separately accepted task
-for any follow-up scope; do not infer business requirements from the fixture.
+TASK-005 remains verified. TASK-006 is locally verified; review its complete
+diff before authorizing protected Git actions.

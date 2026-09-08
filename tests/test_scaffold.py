@@ -61,6 +61,23 @@ def test_adopt_is_read_only_and_reports_existing_mappings(tmp_path: Path):
     assert legacy.read_bytes() == before
 
 
+def test_adopt_reports_document_candidates_sensitive_items_and_git_state(tmp_path: Path):
+    docs = tmp_path / "docs" / "coding"
+    docs.mkdir(parents=True)
+    (docs / "PRD.md").write_text("requirements", encoding="utf-8")
+    (docs / "api-token.txt").write_text("TOKEN=redacted", encoding="utf-8")
+
+    report = adopt_project(tmp_path)
+    payload = report.as_dict()
+
+    assert any(item["source_path"] == "docs/coding/PRD.md" for item in payload["candidates"])
+    sensitive = next(item for item in payload["candidates"] if item["source_path"] == "docs/coding/api-token.txt")
+    assert sensitive["sensitive"] is True
+    assert "redacted" not in str(payload)
+    assert "exclude_patterns" in payload
+    assert payload["git"]["available"] is False
+
+
 def test_init_reports_real_no_git_when_path_is_nested_in_this_checkout(tmp_path: Path, monkeypatch):
     # Prevent Git's parent discovery from treating pytest's fixture as this repo.
     monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path.parent))

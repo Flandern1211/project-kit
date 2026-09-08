@@ -10,6 +10,7 @@ import subprocess
 from .authorization import _authorization_fields, _when
 from .frontmatter import FrontmatterError, parse_frontmatter
 from .git_context import inspect_git
+from .migration import _normalize_generated, _render_governance_copy, load_migration_plan
 
 BASELINE = ("AGENTS.md", "README.md", ".gitignore", ".project-governance.toml", "CONTRIBUTING.md", "CHANGELOG.md", "docs/INDEX.md", "docs/STATUS.md")
 REQUIRED_VIEWS = ("docs/STATUS.md", "docs/WORKFLOW.md", "docs/work/BOARD.md", "docs/activity/ACTIVITY.md")
@@ -23,6 +24,8 @@ REQUIRED_ARTIFACTS = (
     "docs/templates/bug.md",
     "docs/templates/review.md",
     "docs/templates/verification.md",
+    "docs/templates/migration.md",
+    "docs/migrations/INDEX.md",
     "docs/operations/runbooks/INDEX.md",
     "docs/operations/incidents/INDEX.md",
     "docs/operations/postmortems/INDEX.md",
@@ -34,11 +37,11 @@ VIEW_MARKERS = {
 }
 RECORD_INDEXES = {
     "requirement": "docs/requirements/INDEX.md", "design": "docs/design/INDEX.md", "decision": "docs/decisions/INDEX.md",
-    "task": "docs/work/tasks/INDEX.md", "bug": "docs/work/bugs/INDEX.md", "review": "docs/reviews/INDEX.md", "verification": "docs/verification/INDEX.md",
+    "task": "docs/work/tasks/INDEX.md", "bug": "docs/work/bugs/INDEX.md", "review": "docs/reviews/INDEX.md", "verification": "docs/verification/INDEX.md", "migration": "docs/migrations/INDEX.md",
 }
-PROJECT_STAGES = {"initialized", "requirements_discussion", "requirements_review", "active_development", "maintenance", "blocked"}
-RECORD_ID_RE = re.compile(r"^(REQ|DES|ADR|TASK|BUG|REVIEW|VER|INC)-[A-Za-z0-9][A-Za-z0-9._-]*$")
-RECORD_PREFIXES = {"requirement": "REQ-", "design": "DES-", "decision": "ADR-", "task": "TASK-", "bug": "BUG-", "review": "REVIEW-", "verification": "VER-"}
+PROJECT_STAGES = {"initialized", "requirements_discussion", "requirements_review", "adoption_review", "active_development", "maintenance", "blocked"}
+RECORD_ID_RE = re.compile(r"^(REQ|DES|ADR|TASK|BUG|REVIEW|VER|INC|MIG)-[A-Za-z0-9][A-Za-z0-9._-]*$")
+RECORD_PREFIXES = {"requirement": "REQ-", "design": "DES-", "decision": "ADR-", "task": "TASK-", "bug": "BUG-", "review": "REVIEW-", "verification": "VER-", "migration": "MIG-"}
 
 @dataclass(frozen=True)
 class CheckResult:
@@ -207,6 +210,51 @@ def run_checks(root: str | Path) -> CheckResult:
             if RECORD_ID_RE.fullmatch(related) and related not in record_by_id:
                 _issue(issues, "unknown_related_id", relative, f"related record does not exist: {related}")
     for relative, metadata, _body, _text in records:
+        if metadata.type.value != "migration":
+            continue
+        try:
+            plan = load_migration_plan(root, metadata.id)
+        except (OSError, ValueError) as exc:
+            _issue(issues, "invalid_migration_item", relative, str(exc))
+            continue
+        allowed_statuses = {"candidate", "approved", "excluded", "applied", "needs_review", "conflict", "source_changed", "failed"}
+        for entry in plan.entries:
+            if entry.status not in allowed_statuses:
+                _issue(issues, "invalid_migration_item", relative, f"invalid migration item status: {entry.status}")
+                continue
+            source = (root / entry.source_path).resolve()
+            try:
+                source.relative_to(root.resolve())
+            except ValueError:
+                _issue(issues, "invalid_migration_item", relative, f"migration source escapes project root: {entry.source_path}")
+                continue
+            if not source.is_file():
+                _issue(issues, "missing_migration_source", relative, f"migration source is missing: {entry.source_path}")
+                continue
+            if entry.source_hash:
+                import hashlib
+                if hashlib.sha256(source.read_bytes()).hexdigest() != entry.source_hash:
+                    _issue(issues, "migration_source_changed", relative, f"migration source changed: {entry.source_path}")
+            if entry.sensitive and entry.status in {"approved", "applied"}:
+                _issue(issues, "sensitive_migration_source", relative, f"sensitive migration item is actionable: {entry.item_id}")
+            if entry.target_path:
+                target = (root / entry.target_path).resolve()
+                try:
+                    target.relative_to(root.resolve())
+                except ValueError:
+                    _issue(issues, "invalid_migration_item", relative, f"migration target escapes project root: {entry.target_path}")
+                    continue
+                if entry.status == "applied" and not target.is_file():
+                    _issue(issues, "migration_target_conflict", relative, f"applied migration target is missing: {entry.target_path}")
+                elif entry.status in {"approved", "applied"} and target.is_file() and not entry.sensitive:
+                    try:
+                        source_text = source.read_text(encoding="utf-8")
+                        expected = _render_governance_copy(root, metadata.id, entry, source_text)
+                        if _normalize_generated(target.read_text(encoding="utf-8")) != _normalize_generated(expected):
+                            _issue(issues, "migration_target_conflict", relative, f"migration target content differs: {entry.target_path}")
+                    except (OSError, UnicodeDecodeError, ValueError):
+                        _issue(issues, "migration_target_conflict", relative, f"migration target cannot be verified: {entry.target_path}")
+    for relative, metadata, _body, _text in records:
         if metadata.type.value != "task" or metadata.status.value not in {"in_progress", "in_review", "blocked"}:
             continue
         related = [record_by_id.get(item) for item in metadata.related]
@@ -259,9 +307,9 @@ def run_checks(root: str | Path) -> CheckResult:
     active_records = {"in_progress", "in_review", "blocked"}
     for relative, metadata, body, _text in records:
         if metadata.type.value not in {"task", "bug"}: continue
-        if metadata.status.value not in active_records: continue
         branch = _declared_branch(body)
         if branch: declared_branches.add(branch)
+        if metadata.status.value not in active_records: continue
         scopes.extend((scope, metadata.id, relative) for scope in _scope_values(body))
     for index, (scope, record_id, relative) in enumerate(scopes):
         for other_scope, other_id, other_relative in scopes[index + 1:]:
@@ -284,8 +332,11 @@ def run_checks(root: str | Path) -> CheckResult:
             if worktree.get("dirty") == "true": _issue(issues, "dirty_worktree", worktree.get("path", ".git"), "linked Git worktree has uncommitted changes")
         try: branches = subprocess.run(["git", "branch", "--format=%(refname:short)"], cwd=root, check=True, capture_output=True, text=True).stdout.splitlines()
         except (OSError, subprocess.CalledProcessError): branches = []
+        registered = {value.strip().removeprefix("refs/heads/").casefold() for value in declared_branches}
         for branch in sorted(branches):
-            if (branch.startswith("task/") or branch.startswith("bug/")) and branch not in declared_branches: _issue(issues, "unregistered_branch", ".git", f"task/bug branch is not registered: {branch}")
+            normalized_branch = branch.strip().removeprefix("refs/heads/")
+            if (normalized_branch.startswith("task/") or normalized_branch.startswith("bug/")) and normalized_branch.casefold() not in registered:
+                _issue(issues, "unregistered_branch", ".git", f"task/bug branch is not registered: {normalized_branch}")
     if governed_project and git is None:
         if any(metadata.type.value in {"task", "bug"} and metadata.status.value in {"in_progress", "in_review", "blocked"} for _relative, metadata, _body, _text in records):
             _issue(issues, "git_not_initialized", ".git", "actionable work requires an initialized Git repository")

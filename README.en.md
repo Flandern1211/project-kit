@@ -10,7 +10,11 @@ The toolkit is independent of a project's programming language, framework,
 issue tracker, or model provider. It generates ordinary Markdown/TOML files
 and provides offline validation.
 
-## v0.1 scope
+## Current scope
+
+The current development version is `0.2.0.dev0`. It includes v0.1 new-project initialization and the v0.2 existing-project migration MVP.
+
+v0.1 includes:
 
 - initialize or inspect a project governance structure;
 - create requirement, design, decision, task, bug, and verification records;
@@ -18,6 +22,13 @@ and provides offline validation.
 - provide human-readable and JSON output for people and agents;
 - inspect Git branches, commits, and worktree state;
 - update a task's cross-session handoff section.
+
+v0.2 includes:
+
+- supplement an existing project with missing governance files;
+- scan existing Markdown/plain-text documents and create a migration plan;
+- create source-hashed governance drafts only after explicit approval;
+- preserve original files and report sensitive content, conflicts, source changes, and failures.
 
 GitHub Issues and pull requests remain discussion, review, and merge entry
 points. Repository Markdown is the durable source of truth.
@@ -53,7 +64,13 @@ For an existing project, inspect it first with read-only commands:
 ```powershell
 pgk adopt --root C:\path\to\project --json
 pgk doctor --root C:\path\to\project
+pgk init --root C:\path\to\project --mode supplement
+pgk migrate plan --root C:\path\to\project --json
+pgk migrate approve MIG-001 --root C:\path\to\project --json
+pgk migrate apply MIG-001 --root C:\path\to\project --json
 ```
+
+Migration preserves the original files and creates `draft` copies under the standard governance directories. Unapproved items are not written, and conflicts never overwrite existing files.
 
 Create a task and hand it between agents or sessions:
 
@@ -78,11 +95,12 @@ pgk check      validate documents, links, and status
 pgk new        create a governance record
 pgk index      update the work index
 pgk handoff    update task handoff information
+pgk migrate    plan, approve, and apply document migration
 ```
 
 ## Status
 
-The current version is the pre-release `0.1.0.dev0`. The toolkit repository
+The current version is the pre-release `0.2.0.dev0`. The toolkit repository
 dogfoods its own governance architecture, and TouzhiAgent is its first
 external trial project.
 

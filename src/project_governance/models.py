@@ -10,6 +10,7 @@ class RecordType(StrEnum):
     BUG = "bug"
     REVIEW = "review"
     VERIFICATION = "verification"
+    MIGRATION = "migration"
 
 class Status(StrEnum):
     DRAFT = "draft"

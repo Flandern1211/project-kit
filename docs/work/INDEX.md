@@ -11,6 +11,7 @@ The index is generated from task and bug records.
 - [TASK-003](tasks/TASK-003-refine-new-project-governance-requirements.md) — verified
 - [TASK-004](tasks/TASK-004-revise-v0-1-technical-design-for-new-project-governance.md) — verified
 - [TASK-005](tasks/TASK-005-implement-v0-1-new-project-governance-baseline.md) — verified
+- [TASK-006](tasks/TASK-006-implement-v0-2-existing-project-migration.md) — verified
 
 ## Bugs
 

@@ -8,7 +8,11 @@ Project Governance Kit（`pgk`）是一套面向 Agent、同时方便人阅读�
 工具包与项目的编程语言、框架、Issue 平台和模型提供商无关。它生成普通的
 Markdown/TOML 文件，并提供离线检查能力。
 
-## v0.1 范围
+## 当前版本范围
+
+当前开发版本为 `0.2.0.dev0`，包含 v0.1 新项目初始化和 v0.2 已有项目接入/文档迁移 MVP。
+
+v0.1 功能：
 
 - 初始化或检查项目治理结构；
 - 创建需求、设计、决策、任务、Bug 和验收记录；
@@ -16,6 +20,13 @@ Markdown/TOML 文件，并提供离线检查能力。
 - 输出适合人和 Agent 使用的文本或 JSON；
 - 读取 Git 分支、提交和工作区状态；
 - 更新任务的跨会话交接区。
+
+v0.2 功能：
+
+- 补齐已有项目的治理骨架；
+- 扫描已有 Markdown/纯文本并生成迁移方案；
+- 用户批准后生成带来源哈希的治理副本；
+- 保留原文件，报告敏感内容、冲突、源文件变化和失败项。
 
 GitHub Issue 和 Pull Request 作为讨论、评审和合并入口；仓库 Markdown 是长期记录的权威来源。
 
@@ -44,12 +55,18 @@ pgk check --root .
 `pgk check` 和 `pgk handoff`。`git init`、commit、push、Issue/PR、merge、
 tag、release 和删除等受保护动作始终需要用户明确确认，Kit 不会自动执行。
 
-在已有项目中，先用只读命令查看接入情况：
+在已有项目中，先用只读命令查看接入情况，再选择补齐或迁移：
 
 ```powershell
 pgk adopt --root C:\path\to\project --json
 pgk doctor --root C:\path\to\project
+pgk init --root C:\path\to\project --mode supplement
+pgk migrate plan --root C:\path\to\project --json
+pgk migrate approve MIG-001 --root C:\path\to\project --json
+pgk migrate apply MIG-001 --root C:\path\to\project --json
 ```
+
+迁移会保留原文件，只在标准治理目录生成 `draft` 副本；未批准的条目不会写入，冲突不会覆盖已有文件。
 
 创建任务并在不同 Agent/会话之间交接：
 
@@ -72,12 +89,13 @@ pgk doctor     检查项目治理状态
 pgk check      检查文档、链接和状态
 pgk new        创建治理记录
 pgk index      更新工作索引
-pgk handoff    更新任务交接信息
+  pgk handoff    更新任务交接信息
+  pgk migrate    规划、批准并应用文档迁移
 ```
 
 ## 当前状态
 
-当前版本为预发布版本 `0.1.0.dev0`。工具包仓库自身使用这套治理架构进行开发和验证，
+当前版本为预发布版本 `0.2.0.dev0`。工具包仓库自身使用这套治理架构进行开发和验证，
 TouzhiAgent 是第一个外部试验项目。
 
 ## 文档

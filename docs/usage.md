@@ -76,6 +76,14 @@ pgk adopt --root C:\path\to\project --json
 pgk doctor --root C:\path\to\project --json
 ```
 
+只补齐治理骨架时，确认报告后运行：
+
+```powershell
+pgk init --root C:\path\to\project --mode supplement
+```
+
+`--mode supplement` 只创建缺失文件；已有 `docs/STATUS.md` 会原样保留，没有状态文件时新状态为 `adoption_review`。
+
 `adopt` 报告已有文件、缺失文件和可识别的旧结构映射。确认方案后，才执行
 `init` 补齐缺失文件：
 
@@ -90,13 +98,25 @@ pgk init --root C:\path\to\project
 
 The tool does not automatically rename, delete, or merge existing documents.
 
+迁移模式先生成 `MIG-*` 方案。只自动处理 Markdown、Markdown 变体和 UTF-8 纯文本；其他格式、敏感文件和无法分类的内容只报告：
+
+```powershell
+pgk migrate plan --root C:\path\to\project --json
+pgk migrate approve MIG-001 --root C:\path\to\project --item ITEM-001 --json
+pgk migrate apply MIG-001 --root C:\path\to\project --json
+```
+
+`plan` 写入候选方案，`approve` 只改变条目状态，`apply` 只复制明确批准的条目。原文件保留在原位置，治理副本为 `draft` 并包含来源路径、来源哈希和迁移批次。重复运行具有幂等性；源变化或目标冲突会报告且不覆盖。
+
+Migration mode first creates a `MIG-*` plan. It automatically handles only Markdown, Markdown variants, and UTF-8 plain text; other formats, sensitive files, and unclassified content are report-only. Original files remain in place, and conflicts never overwrite existing targets.
+
 ## 4. 创建治理记录 / Create records
 
 记录 ID 必须使用安全前缀，例如 `REQ-`、`DES-`、`ADR-`、`TASK-`、`BUG-`、
-`VER-`。常用示例：
+`VER-`、`MIG-`。常用示例：
 
 Record IDs use safe prefixes such as `REQ-`, `DES-`, `ADR-`, `TASK-`, `BUG-`,
-and `VER-`. Examples:
+`VER-`, and `MIG-`. Examples:
 
 ```powershell
 pgk new requirement REQ-001 "Define the project goal" --root .

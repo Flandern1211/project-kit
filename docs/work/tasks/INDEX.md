@@ -9,3 +9,4 @@ The index is generated from records.
 - [TASK-003](TASK-003-refine-new-project-governance-requirements.md) — verified
 - [TASK-004](TASK-004-revise-v0-1-technical-design-for-new-project-governance.md) — verified
 - [TASK-005](TASK-005-implement-v0-1-new-project-governance-baseline.md) — verified
+- [TASK-006](TASK-006-implement-v0-2-existing-project-migration.md) — verified

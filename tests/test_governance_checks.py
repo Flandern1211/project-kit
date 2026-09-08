@@ -7,6 +7,7 @@ from pathlib import Path
 from project_governance.authorization import authorization_matches
 from project_governance.checks import _scope_values, run_checks
 from project_governance.git_context import inspect_git
+from project_governance.records import create_record
 from project_governance.scaffold import init_project
 
 
@@ -290,6 +291,20 @@ def test_checks_accept_branch_declared_in_handoff(tmp_path: Path):
 
     result = run_checks(tmp_path)
     assert not any(issue["code"] == "unregistered_branch" for issue in result.issues)
+
+
+def test_checks_accept_branch_declared_by_verified_task(tmp_path: Path):
+    init_project(tmp_path)
+    task = create_record(tmp_path, "task", "TASK-901", "Verified branch", status="verified")
+    text = task.read_text(encoding="utf-8")
+    task.write_text(text.replace("branch: N/A", "branch: task/TASK-901-verified"), encoding="utf-8")
+
+    result = run_checks(tmp_path)
+
+    assert not any(
+        issue["code"] == "unregistered_branch" and "task/TASK-901-verified" in issue["message"]
+        for issue in result.issues
+    )
 
 
 def test_checks_require_standard_baseline_files(tmp_path: Path):
