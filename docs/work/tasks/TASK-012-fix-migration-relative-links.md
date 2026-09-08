@@ -46,7 +46,7 @@ root
 
 ## Next action
 
-TASK-012 已合并到本地 `main` 的 7ebef4c；push 仍需用户单独授权。
+TASK-012 已合并到本地 `main` 的 8098a4c；push 仍需用户单独授权。
 
 ## Files
 
@@ -59,4 +59,4 @@ TASK-012 已合并到本地 `main` 的 7ebef4c；push 仍需用户单独授权�
 branch: task/TASK-012-migration-relative-links
 worktree: D:/Project/project-kit/.worktrees/touzhi-link-fix
 base_commit: bcf8d1e
-head_commit: 7ebef4c
+head_commit: 8098a4c

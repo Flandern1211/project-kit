@@ -50,4 +50,4 @@ TASK-012 的 Markdown 相对链接重写实现、单元测试和 TouzhiAgent 隔
 
 ## Next action
 
-TASK-012 已合并到本地 `main` 的 7ebef4c；push 仍需用户单独授权。
+TASK-012 已合并到本地 `main` 的 8098a4c；push 仍需用户单独授权。

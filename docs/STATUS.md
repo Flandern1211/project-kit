@@ -10,7 +10,7 @@ current_design: DES-003-ZH
 current_task: none
 owner: root
 blocker: none; push remains user-controlled
-next_action: review local main at 7ebef4c and decide whether to push
+next_action: review local main at 8098a4c and decide whether to push
 git_state: git_initialized
 updated: 2026-09-08
 ```
@@ -32,7 +32,7 @@ combined profile, visibility and migration implementation passed merged-result
 verification on `main` at 8d57cd7.
 TASK-012 fixes relative links in migrated Markdown copies and passed an
 isolated TouzhiAgent clone validation. The fix is merged into local `main` at
-7ebef4c.
+8098a4c.
 
 ## Known constraints
 
@@ -65,4 +65,4 @@ isolated TouzhiAgent clone validation. The fix is merged into local `main` at
 TASK-007 profile implementation and TASK-008 bilingual README synchronization are verified.
 TASK-009 visibility design, TASK-010 implementation, TASK-011 migration
 implementation, and TASK-012 relative-link repair are verified in the merged
-result. Review local main at 7ebef4c before authorizing push.
+result. Review local main at 8098a4c before authorizing push.
