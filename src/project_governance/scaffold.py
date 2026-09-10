@@ -7,17 +7,199 @@ from .config import default_visibility_dirs, validate_collaboration_mode, valida
 from .git_context import inspect_git
 
 _EMPTY = "# {title}\n\nNo records yet.\n"
+_AGENTS_TEMPLATE = """# Agent instructions for {project_name}
+
+Governance profile: {profile}
+Collaboration mode: {collaboration_mode}
+
+## Read before acting
+Read `AGENTS.md`, `docs/INDEX.md`, `docs/project-structure.md`, and `docs/STATUS.md` before changing files. Then read the linked requirement, design or decision, task or bug, review, and verification records that govern the change.
+
+## Architecture limits
+Supported lifecycle RecordTypes are `requirement`, `design`, `decision`, `task`, `bug`, `review`, `verification`, and `migration`.
+Strict risk/security/release/runbook/incident/postmortem paths contain ordinary control Markdown, not new RecordTypes. Do not add lifecycle frontmatter types for them.
+Do not create new governance directories, records, statuses, or business modules unless an accepted design and task authorize them. Unknown business directories require an accepted design and task before use.
+
+## Repository map
+- `docs/requirements/`: product intent and acceptance criteria; keep requirements authoritative and confirmed through the requirements gate.
+- `docs/design/`: accepted architecture and implementation design; do not substitute plans or code for design decisions.
+- `docs/decisions/`: durable decisions and alternatives; record changes instead of silently rewriting history.
+- `docs/work/tasks/`: scoped implementation tasks; every non-trivial change needs an owner, files, and evidence.
+- `docs/work/bugs/`: reproducible defects and their fix scope; do not use bugs as new requirements.
+- `docs/reviews/`: review findings and verdicts; review records do not silently modify implementation branches.
+- `docs/verification/`: evidence-backed validation; do not claim verified without commands or inspection evidence.
+- `docs/migrations/`: migration plans and outcomes; source documents stay at their original paths.
+- `docs/activity/`: concise activity timeline; coordination history is not a replacement for source-of-truth records.
+- `docs/operations/runbooks/`, `docs/operations/incidents/`, `docs/operations/postmortems/`: operational control Markdown; keep them ordinary Markdown without lifecycle frontmatter types.
+- `docs/risk/`, `docs/security/`, `docs/releases/`: Strict control Markdown for risk, security, and release evidence; keep them ordinary Markdown without lifecycle frontmatter types.
+- `docs/templates/`: record templates only; copy and complete the supported lifecycle template rather than creating a new type.
+- `docs/INDEX.md`, `docs/project-structure.md`, `docs/WORKFLOW.md`, `docs/project-conventions.md`, and `docs/STATUS.md`: navigation, structure, workflow, conventions, and current state; do not duplicate record bodies.
+- `docs/work/INDEX.md` and `docs/work/BOARD.md`: generated task/bug navigation and board; update source records, then regenerate indexes.
+
+## State gates
+Requirements are drafts until user confirmation. Before implementation require an accepted requirement, applicable design/ADR, and TASK/BUG with owner and scope. Complete records and code, run semantic checks, fill evidence, commit once, run read-only clean-tree checks, and do not edit the repository after the clean-tree check. Put post-commit output in the external experiment report or handoff.
+
+## Handoff
+Record completed and remaining work, branch, HEAD, workspace status, uncommitted changes, blockers, verification, and one next action.
+
+## Protected actions
+Commit, push, Issue/PR, merge, tag, release/publication, and deletion require explicit user authorization naming action, target, scope, and expiry. Authorization never carries to another action; without a match prepare a preview only.
+"""
+_PROJECT_STRUCTURE_TEMPLATE = """<!-- PGK_GENERATED: project-structure -->
+# Project structure
+
+This map distinguishes Kit-owned governance documents from project business
+content. The generated folders are safe defaults; a new governance directory,
+record, status, or business module requires an accepted design and task.
+
+## Root files
+
+| Path | Purpose | Boundary |
+|---|---|---|
+| `AGENTS.md` | Agent contract and architecture limits | Read before acting; do not weaken its gates silently. |
+| `README.md` | Project entry point | Link to documentation; do not duplicate governance records. |
+| `CONTRIBUTING.md` | Contribution guidance | Keep implementation work linked to a task or bug. |
+| `CHANGELOG.md` | Release-facing change summary | Do not use it as a release record or verification record. |
+| `.project-governance.toml` | Kit profile and path configuration | Change only through an accepted governance change. |
+| `.gitignore` | Local/generated exclusions | Never use it to hide required evidence. |
+
+## Governance documents
+
+| Path | Purpose | Boundary |
+|---|---|---|
+| `docs/INDEX.md` | Navigation to current governance documents | Links only; it does not replace record bodies. |
+| `docs/STATUS.md` | Current project stage, ownership, blocker, and next action | Keep it synchronized with accepted records and evidence. |
+| `docs/WORKFLOW.md` | Lifecycle states and finalization sequence | Describes process; it is not a task record. |
+| `docs/project-structure.md` | Detailed Kit-owned directory map | Update with an accepted design when the Kit structure changes. |
+| `docs/project-conventions.md` | Record, Git, verification, and security conventions | Do not invent lifecycle types or statuses here. |
+| `docs/requirements/` | Product intent and acceptance criteria | Use `requirement` records; acceptance is a user decision. |
+| `docs/design/` | Architecture and implementation design | Use `design` records; implementation does not imply acceptance. |
+| `docs/decisions/` | Durable decisions, alternatives, and consequences | Use `decision` records; preserve superseded history. |
+| `docs/work/tasks/` | Planned and active implementation tasks | Use `task` records with owner, scope, files, and evidence. |
+| `docs/work/bugs/` | Reproducible defects and fix scope | Use `bug` records; do not turn a bug into a new schema type. |
+| `docs/work/INDEX.md` | Generated task and bug navigation | Regenerate from source records instead of editing bodies here. |
+| `docs/work/BOARD.md` | Generated work status board | Keep it a view of task and bug records. |
+| `docs/reviews/` | Review findings and verdicts | Use `review` records; reviewers do not silently modify branches. |
+| `docs/verification/` | Validation and acceptance evidence | Use `verification` records; claims need command or inspection evidence. |
+| `docs/migrations/` | Migration plans and per-run outcomes | Use `migration` records; never move or overwrite source files. |
+| `docs/activity/` | Concise project activity timeline | Coordination material does not replace authoritative records. |
+| `docs/templates/` | Templates for supported lifecycle records | Templates are not records and do not authorize new types. |
+
+## Strict control documents
+
+Strict `risk`, `security`, `release`, `runbook`, `incident`, and `postmortem`
+documents are ordinary Markdown under their respective directories. They do
+not use lifecycle frontmatter and do not add RecordTypes. Their paths are:
+
+- `docs/risk/`: risk register and risk-control evidence.
+- `docs/security/`: security controls, findings, and review evidence.
+- `docs/releases/`: release notes and release evidence.
+- `docs/operations/runbooks/`: repeatable operational procedures.
+- `docs/operations/incidents/`: incident records and response timelines.
+- `docs/operations/postmortems/`: learning and follow-up after incidents.
+
+## Optional coordination paths
+
+`docs/plans/`, `docs/superpowers/plans/`, and `docs/superpowers/specs/` may hold
+plans or proposals. They coordinate work but do not become accepted
+requirements, designs, tasks, or verification records until copied into the
+supported source-of-truth locations. `.agent/` contains local session and
+handoff projections when used; it is not a governance record and is ignored by
+default.
+
+## Source of truth versus coordination
+
+Requirements, designs, decisions, tasks, bugs, reviews, verification records,
+and migrations are the supported lifecycle source of truth. Indexes, boards,
+activity, plans, specs, handoffs, and chat are coordination material and must
+point back to authoritative records. Unknown business directories are not
+pre-approved; an accepted design and task must authorize them first.
+"""
+_WORKFLOW_TEMPLATE = """<!-- PGK_GENERATED: workflow -->
+# Governance workflow
+
+```mermaid
+stateDiagram-v2
+[*] --> initialized
+initialized --> requirements_discussion
+requirements_discussion --> requirements_review
+requirements_review --> active_development
+active_development --> maintenance
+active_development --> blocked
+maintenance --> active_development
+blocked --> active_development: resolve blocker and resume
+blocked --> requirements_review: revise requirements
+```
+
+## Two-phase finalization
+
+1. Complete all records, source files, tests, and documentation.
+2. Run semantic checks while changes are uncommitted.
+3. Fill final evidence and terminal statuses.
+4. Commit the complete task branch once.
+5. Run read-only clean-tree `pgk check` and `pgk doctor`.
+6. Do not edit the repository after the clean-tree check. Store post-commit
+   output in the external experiment report or handoff.
+"""
+_CONVENTIONS_TEMPLATE = """<!-- PGK_GENERATED: project-conventions -->
+# Project conventions
+
+## Records
+
+The supported lifecycle RecordTypes are `requirement`, `design`, `decision`,
+`task`, `bug`, `review`, `verification`, and `migration`. Records use YAML
+frontmatter with `id`, `type`, `status`, `created`, and `updated`.
+
+The lifecycle statuses are `draft`, `accepted`, `in_progress`, `blocked`,
+`verified`, `done`, and `rejected`. A record may move to `verified` only when
+its verification section names the evidence used.
+
+Strict risk, security, release, runbook, incident, and postmortem documents are
+ordinary Markdown. Do not add lifecycle frontmatter or invent a RecordType for
+them. Unknown governance directories, records, statuses, and business modules
+require an accepted design and task.
+
+Indexes link to records but do not duplicate their bodies. Meaningful updates
+append a short timeline entry to the existing record. Do not create a separate
+implementation log for every progress message.
+
+## Git
+
+`main` is an integration branch. A non-trivial task uses one short-lived
+branch and one worktree when parallel work is active. A reviewer does not
+silently modify the implementer's branch.
+
+## Verification
+
+Verification must name the command or inspection evidence used. A passing test
+suite does not by itself prove external services, deployment, performance, or
+long-running behavior.
+
+## Two-phase finalization
+
+Complete records and code, run semantic checks, fill evidence, commit once, run
+read-only clean-tree checks, and do not edit the repository after the clean-tree
+check. Post-commit output belongs in the external experiment report or handoff.
+
+## Security
+
+Secrets, private data, complete model payloads, and unredacted runtime logs do
+not belong in repository documents. The core toolkit performs local checks and
+does not call external services.
+"""
 STANDARD_FILES: dict[str, str] = {
-    "AGENTS.md": "# Agent instructions for {project_name}\n\nGovernance profile: {profile}\nCollaboration mode: {collaboration_mode}\n\n## Read before acting\nRead `AGENTS.md`, `docs/INDEX.md`, `docs/STATUS.md`, linked requirement/design/task/bug/review/verification records, then the current Git branch, HEAD and status.\n\n## State gates\nRequirements are drafts until user confirmation. Before implementation require an accepted requirement, applicable design/ADR, and TASK/BUG with owner and scope. Stop and record blockers for missing or conflicting records. v0.1 supports single-Agent work and sequential handoffs; parallel coordination is deferred.\n\n## Handoff\nRecord completed and remaining work, branch, HEAD, workspace status, uncommitted changes, blockers, verification, and one next action.\n\n## Protected actions\nCommit, push, Issue/PR, merge, tag, release/publication, and deletion require explicit user authorization naming action, target, scope, and expiry. Authorization never carries to another action; without a match prepare a preview only.\n",
+    "AGENTS.md": _AGENTS_TEMPLATE,
     "README.md": "# {project_name}\n\nStart with [docs/INDEX.md](docs/INDEX.md).\n",
     "CONTRIBUTING.md": "# Contributing to {project_name}\n\nStart non-trivial work from a task or bug record. Keep code, tests, documentation, and verification linked.\n",
     "CHANGELOG.md": "# Changelog\n\n## Unreleased\n\n",
     ".gitignore": "# Project Governance Kit\n__pycache__/\n*.py[cod]\n.venv/\n.agent/\n",
     ".project-governance.toml": "kit_version = \"0.1.0\"\nschema_version = 1\nprofile = \"{profile}\"\ncollaboration_mode = \"{collaboration_mode}\"\nvisibility = \"{visibility}\"\ngovernance_dir = \"{governance_dir}\"\npublic_docs_dir = \"{public_docs_dir}\"\ndocs_dir = \"docs\"\nrecords_dir = \"docs/work\"\n",
-    "docs/INDEX.md": "# Project documentation index\n\nRead [STATUS](STATUS.md), then the relevant requirement, design, task, review and verification records.\n",
+    "docs/INDEX.md": "# Project documentation index\n\nRead [STATUS](STATUS.md), then [Project structure](project-structure.md) and [Project conventions](project-conventions.md). Next read the relevant requirement, design, task, review, verification, and migration records.\n",
     "docs/STATUS.md": "# Project status\n\n```yaml\nproject_stage: requirements_discussion\nprofile: {profile}\ncollaboration_mode: {collaboration_mode}\ncurrent_requirement: N/A\ncurrent_design: N/A\ncurrent_task: N/A\nowner: N/A\nblocker: none\nnext_action: discuss and record project requirements\nupdated: {date}\ngit_state: {git_state}\n```\n\nNo business requirements are created by initialization.\n",
-    "docs/WORKFLOW.md": "<!-- PGK_GENERATED: workflow -->\n# Governance workflow\n\n```mermaid\nstateDiagram-v2\n[*] --> initialized\ninitialized --> requirements_discussion\nrequirements_discussion --> requirements_review\nrequirements_review --> active_development\nactive_development --> maintenance\nactive_development --> blocked\nmaintenance --> active_development\nblocked --> active_development: resolve blocker and resume\nblocked --> requirements_review: revise requirements\n```\n",
-    "docs/templates/INDEX.md": "# Record templates\n\nTemplates: requirement, design, decision, task, bug, review, verification.\n",
+    "docs/WORKFLOW.md": _WORKFLOW_TEMPLATE,
+    "docs/project-structure.md": _PROJECT_STRUCTURE_TEMPLATE,
+    "docs/project-conventions.md": _CONVENTIONS_TEMPLATE,
+    "docs/templates/INDEX.md": "# Record templates\n\nTemplates: requirement, design, decision, task, bug, review, verification, migration.\n",
     "docs/requirements/INDEX.md": "<!-- PGK_GENERATED: requirement-index -->\n# Requirement index\n\nNo records yet.\n",
     "docs/design/INDEX.md": "<!-- PGK_GENERATED: design-index -->\n# Design index\n\nNo records yet.\n",
     "docs/decisions/INDEX.md": "<!-- PGK_GENERATED: decision-index -->\n# Decision index\n\nNo records yet.\n",

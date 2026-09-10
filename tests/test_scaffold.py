@@ -107,6 +107,49 @@ def test_generated_status_and_views_include_required_contract(tmp_path: Path):
     assert "initialize | N/A | N/A | initialized -> requirements_discussion" in activity
 
 
+def test_strict_generation_includes_agent_and_document_map(tmp_path: Path):
+    init_project(tmp_path, profile="strict")
+
+    guidance = (tmp_path / "AGENTS.md").read_text(encoding="utf-8")
+    for record_type in (
+        "requirement",
+        "design",
+        "decision",
+        "task",
+        "bug",
+        "review",
+        "verification",
+        "migration",
+    ):
+        assert record_type in guidance
+    for path in (
+        "docs/requirements/",
+        "docs/design/",
+        "docs/decisions/",
+        "docs/work/tasks/",
+        "docs/work/bugs/",
+        "docs/reviews/",
+        "docs/verification/",
+        "docs/migrations/",
+        "docs/activity/",
+        "docs/operations/runbooks/",
+        "docs/operations/incidents/",
+        "docs/operations/postmortems/",
+        "docs/risk/",
+        "docs/security/",
+        "docs/releases/",
+        "docs/templates/",
+    ):
+        assert path in guidance
+    assert "risk/security/release/runbook" in guidance
+    assert "Do not create" in guidance
+
+    structure = tmp_path / "docs/project-structure.md"
+    assert structure.is_file()
+    index = (tmp_path / "docs/INDEX.md").read_text(encoding="utf-8")
+    assert "[Project structure](project-structure.md)" in index
+
+
 def test_generated_record_templates_include_task_git_contract(tmp_path: Path):
     init_project(tmp_path)
     task_template = (tmp_path / "docs/templates/task.md").read_text(encoding="utf-8")
