@@ -2,6 +2,14 @@ from dataclasses import dataclass
 from pathlib import Path
 import subprocess
 
+
+class GitInspectionError(ValueError):
+    def __init__(self, code: str, message: str):
+        self.code = code
+        self.message = message
+        super().__init__(message)
+
+
 @dataclass(frozen=True)
 class GitContext:
     branch: str
@@ -14,6 +22,23 @@ def _git(root: Path, *args: str) -> str:
     p = subprocess.run(['git', *args], cwd=root, text=True, capture_output=True, check=True)
     return p.stdout.strip()
 
+
+def _git_inspection_error(root: Path, exc: subprocess.CalledProcessError | OSError) -> GitInspectionError:
+    details = " ".join(
+        value.strip()
+        for value in (getattr(exc, "stdout", ""), getattr(exc, "stderr", ""), str(exc))
+        if value and value.strip()
+    )
+    lowered = details.casefold()
+    git_metadata = root / ".git"
+    if not root.exists() or (
+        not git_metadata.exists()
+        and ("not a git repository" in lowered or "no git repository" in lowered)
+    ):
+        return GitInspectionError("git_not_initialized", f"Git repository is not initialized: {root}")
+    return GitInspectionError("git_unreadable", f"Git repository is unreadable: {root}; {details or 'inspection failed'}")
+
+
 def inspect_git(root: str | Path, limit: int = 5) -> GitContext:
     root = Path(root)
     try:
@@ -23,7 +48,7 @@ def inspect_git(root: str | Path, limit: int = 5) -> GitContext:
         # itself be the worktree root, not merely a child of another checkout.
         git_root = Path(_git(root, 'rev-parse', '--show-toplevel')).resolve()
         if git_root != root.resolve():
-            raise ValueError(f'not a readable Git repository: {root}')
+            raise GitInspectionError("git_not_initialized", f"Git repository is not initialized at project root: {root}")
         branch = _git(root, 'branch', '--show-current') or 'HEAD'
         try:
             head = _git(root, 'rev-parse', 'HEAD')
@@ -72,5 +97,10 @@ def inspect_git(root: str | Path, limit: int = 5) -> GitContext:
             worktrees = []
         worktrees.sort(key=lambda item: (item.get('path', ''), item.get('head', ''), item.get('branch', '')))
         return GitContext(branch, head, bool(status), tuple(x for x in log.splitlines() if x), tuple(dict(item) for item in worktrees))
+    except GitInspectionError:
+        raise
     except (subprocess.CalledProcessError, OSError) as exc:
-        raise ValueError(f'not a readable Git repository: {root}') from exc
+        raise _git_inspection_error(root, exc) from exc
+
+
+__all__ = ["GitContext", "GitInspectionError", "inspect_git"]

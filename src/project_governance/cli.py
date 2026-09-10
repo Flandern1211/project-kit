@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
+import os
 from pathlib import Path
+import sys
+import tempfile
 from typing import Any, Sequence
 
 from .checks import run_checks
-from .git_context import inspect_git
+from .git_context import GitInspectionError, inspect_git
 from .handoff import preview_handoff, update_handoff
 from .migration import apply_migration, approve_migration, create_migration_plan, load_migration_plan, scan_project
 from .records import create_record, update_indexes, update_work_index
@@ -122,6 +126,8 @@ def _check_payload(result: Any) -> dict[str, object]:
 def _doctor(root: Path) -> dict[str, object]:
     checks = _check_payload(run_checks(root))
     adoption = adopt_project(root).as_dict()
+    git = None
+    git_error_code = None
     try:
         git = inspect_git(root)
         git_value = {
@@ -133,6 +139,7 @@ def _doctor(root: Path) -> dict[str, object]:
             "worktrees": [dict(item) for item in git.worktrees],
         }
     except ValueError as exc:
+        git_error_code = getattr(exc, "code", "git_unreadable")
         git_value = {
             "available": False,
             "error": str(exc),
@@ -142,12 +149,31 @@ def _doctor(root: Path) -> dict[str, object]:
             "recent_commits": [],
             "worktrees": [],
         }
+        if isinstance(exc, GitInspectionError):
+            git_value["error_code"] = exc.code
+        else:
+            git_value["error_code"] = git_error_code
+    if git is not None:
+        worktree_state = "dirty" if git.dirty else "clean"
+    elif git_error_code == "git_not_initialized":
+        worktree_state = "uninitialized"
+    else:
+        worktree_state = "unreadable"
+    temporary_directory = Path(tempfile.gettempdir())
+    preflight = {
+        "python": {"executable": sys.executable},
+        "pytest": {"available": importlib.util.find_spec("pytest") is not None},
+        "git": {"readable": git is not None, "worktree_state": worktree_state},
+        "repository": {"path": str(root), "writable": root.is_dir() and os.access(root, os.W_OK)},
+        "temporary": {"path": str(temporary_directory), "writable": temporary_directory.is_dir() and os.access(temporary_directory, os.W_OK)},
+    }
     return {
         "checks": checks,
         "governance": checks["governance"],
         "authorization": checks["authorization"],
         "adoption": adoption,
         "git": git_value,
+        "preflight": preflight,
     }
 
 

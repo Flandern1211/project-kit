@@ -10,7 +10,7 @@ import subprocess
 from .authorization import _authorization_fields, _when
 from .config import default_visibility_dirs, load_config
 from .frontmatter import FrontmatterError, parse_frontmatter
-from .git_context import inspect_git
+from .git_context import GitInspectionError, inspect_git
 from .migration import _normalize_generated, _render_governance_copy, load_migration_plan
 from .scaffold import required_artifacts_for_profile
 
@@ -368,15 +368,16 @@ def run_checks(root: str | Path) -> CheckResult:
             right = other_scope.replace('\\', '/').strip().lstrip('./').casefold().rstrip('/')
             if left and right and left != 'n/a' and right != 'n/a' and (left == right or left.startswith(right + '/') or right.startswith(left + '/')):
                 _issue(issues, "overlapping_file_scope", min(relative, other_relative), f"file scope {scope} overlaps {record_id} and {other_id}")
-    try: git = inspect_git(root)
-    except ValueError: git = None
-    same_repository = False
-    if git is not None:
-        try:
-            git_root = Path(subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=root, check=True, capture_output=True, text=True).stdout.strip()).resolve()
-            same_repository = git_root == root.resolve()
-        except (OSError, subprocess.CalledProcessError):
-            same_repository = False
+    git_error: GitInspectionError | None = None
+    try:
+        git = inspect_git(root)
+    except GitInspectionError as exc:
+        git = None
+        git_error = exc
+    except ValueError as exc:
+        git = None
+        git_error = GitInspectionError("git_unreadable", str(exc))
+    same_repository = git is not None
     if git is not None and same_repository:
         if git.dirty: _issue(issues, "dirty_worktree", ".git", "Git worktree has uncommitted changes")
         for worktree in git.worktrees:
@@ -388,14 +389,17 @@ def run_checks(root: str | Path) -> CheckResult:
             normalized_branch = branch.strip().removeprefix("refs/heads/")
             if (normalized_branch.startswith("task/") or normalized_branch.startswith("bug/")) and normalized_branch.casefold() not in registered:
                 _issue(issues, "unregistered_branch", ".git", f"task/bug branch is not registered: {normalized_branch}")
-    if governed_project and git is None:
+    if governed_project and git_error is not None and git_error.code != "git_not_initialized":
+        _issue(issues, git_error.code, ".git", git_error.message)
+    if governed_project and git_error is not None and git_error.code == "git_not_initialized":
         if any(metadata.type.value in {"task", "bug"} and metadata.status.value in {"in_progress", "in_review", "blocked"} for _relative, metadata, _body, _text in records):
             _issue(issues, "git_not_initialized", ".git", "actionable work requires an initialized Git repository")
     if governed_project:
         status_git = re.search(r"(?im)^\s*git_state\s*:\s*([^\s]+)", status_text)
-        expected_git_state = "git_initialized" if same_repository else "git_not_initialized"
-        if status_git and status_git.group(1) != expected_git_state:
-            _issue(issues, "git_state_mismatch", (governance_dir / "STATUS.md").as_posix(), f"status git_state is {status_git.group(1)}, expected {expected_git_state}")
+        if git_error is None or git_error.code == "git_not_initialized":
+            expected_git_state = "git_initialized" if same_repository else "git_not_initialized"
+            if status_git and status_git.group(1) != expected_git_state:
+                _issue(issues, "git_state_mismatch", (governance_dir / "STATUS.md").as_posix(), f"status git_state is {status_git.group(1)}, expected {expected_git_state}")
     issues.sort(key=lambda item: (item["code"], item["path"], item["message"]))
     return CheckResult(not issues, tuple(issues), checked_files)
 
