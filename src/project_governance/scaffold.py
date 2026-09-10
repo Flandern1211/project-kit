@@ -37,7 +37,7 @@ Do not create new governance directories, records, statuses, or business modules
 - `docs/work/INDEX.md` and `docs/work/BOARD.md`: generated task/bug navigation and board; update source records, then regenerate indexes.
 
 ## State gates
-Requirements are drafts until user confirmation. Before implementation require an accepted requirement, applicable design/ADR, and TASK/BUG with owner and scope. Complete records and code, run semantic checks, fill evidence, commit once, run read-only clean-tree checks, and do not edit the repository after the clean-tree check. Put post-commit output in the external experiment report or handoff.
+Requirements are drafts until user confirmation. Before implementation require an accepted requirement, applicable design/ADR, and TASK/BUG with owner and scope. Complete records and code, run semantic checks, fill evidence, commit once, run read-only clean-tree checks. Do not edit the repository after the clean-tree check. Put post-commit output in the external experiment report or handoff.
 
 ## Handoff
 Record completed and remaining work, branch, HEAD, workspace status, uncommitted changes, blockers, verification, and one next action.
@@ -235,6 +235,7 @@ LITE_KEYS = {
     ".project-governance.toml", "docs/INDEX.md", "docs/STATUS.md", "docs/WORKFLOW.md",
     "docs/templates/INDEX.md", "docs/templates/requirement.md", "docs/templates/task.md",
     "docs/templates/bug.md", "docs/templates/verification.md", "docs/requirements/INDEX.md",
+    "docs/project-structure.md", "docs/project-conventions.md",
     "docs/work/BOARD.md", "docs/work/tasks/INDEX.md", "docs/work/bugs/INDEX.md",
     "docs/verification/INDEX.md", "docs/activity/ACTIVITY.md",
 }
@@ -248,7 +249,20 @@ STRICT_FILES: dict[str, str] = {
 def files_for_profile(profile: str) -> dict[str, str]:
     profile = validate_profile(profile)
     if profile == "lite":
-        return {key: STANDARD_FILES[key] for key in STANDARD_FILES if key in LITE_KEYS}
+        files = {key: STANDARD_FILES[key] for key in STANDARD_FILES if key in LITE_KEYS}
+        files["AGENTS.md"] = files["AGENTS.md"].replace(
+            "Supported lifecycle RecordTypes are `requirement`, `design`, `decision`, `task`, `bug`, `review`, `verification`, and `migration`.",
+            "Supported lifecycle RecordTypes are `requirement`, `task`, `bug`, and `verification`.",
+        ).replace(
+            "- `docs/migrations/`: migration plans and outcomes; source documents stay at their original paths.\n",
+            "",
+        )
+        files["docs/INDEX.md"] = files["docs/INDEX.md"].replace(
+            "verification, and migration records.",
+            "and verification records.",
+        )
+        files["docs/templates/INDEX.md"] = "# Record templates\n\nLite templates: requirement, task, bug, verification.\n"
+        return files
     files = dict(STANDARD_FILES)
     if profile == "strict":
         files.update(STRICT_FILES)
