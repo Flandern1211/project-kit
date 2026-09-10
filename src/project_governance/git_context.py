@@ -40,6 +40,8 @@ def _git_inspection_error(root: Path, exc: subprocess.CalledProcessError | OSErr
         for value in (getattr(exc, "stdout", ""), getattr(exc, "stderr", ""), str(exc))
         if value and value.strip()
     )
+    if isinstance(exc, OSError):
+        return GitInspectionError("git_unreadable", f"Git repository is unreadable: {root}; {details or 'inspection failed'}")
     git_metadata = root / ".git"
     if _filesystem_entry_state(root) == "missing" or _filesystem_entry_state(git_metadata) == "missing":
         return GitInspectionError("git_not_initialized", f"Git repository is not initialized: {root}")

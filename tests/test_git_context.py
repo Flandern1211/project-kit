@@ -1,3 +1,4 @@
+import os
 import subprocess
 from pathlib import Path
 import pytest
@@ -63,12 +64,12 @@ def test_inspect_git_classifies_unrecognized_failure_as_unreadable(tmp_path, mon
 def test_inspect_git_does_not_treat_metadata_probe_permission_as_uninitialized(tmp_path, monkeypatch):
     metadata = tmp_path / ".git"
     metadata.mkdir()
-    real_exists = Path.exists
+    real_lstat = os.lstat
 
     def permission_probe(path):
         if path == metadata:
             raise PermissionError("metadata access denied")
-        return real_exists(path)
+        return real_lstat(path)
 
     def fail(*args, **kwargs):
         raise subprocess.CalledProcessError(
@@ -77,7 +78,19 @@ def test_inspect_git_does_not_treat_metadata_probe_permission_as_uninitialized(t
             stderr="fatal: repository ownership cannot be verified",
         )
 
-    monkeypatch.setattr(Path, "exists", permission_probe)
+    monkeypatch.setattr("project_governance.git_context.os.lstat", permission_probe)
+    monkeypatch.setattr("project_governance.git_context.subprocess.run", fail)
+
+    with pytest.raises(GitInspectionError) as error:
+        inspect_git(tmp_path)
+
+    assert error.value.code == "git_unreadable"
+
+
+def test_inspect_git_classifies_missing_git_executable_as_unreadable(tmp_path, monkeypatch):
+    def fail(*args, **kwargs):
+        raise FileNotFoundError(2, "git executable not found")
+
     monkeypatch.setattr("project_governance.git_context.subprocess.run", fail)
 
     with pytest.raises(GitInspectionError) as error:
