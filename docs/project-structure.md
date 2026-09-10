@@ -46,6 +46,10 @@ Strict `risk`, `security`, `release`, `runbook`, `incident`, and `postmortem`
 documents are ordinary Markdown under their respective directories. They do
 not use lifecycle frontmatter and do not add RecordTypes:
 
+`pgk check` reports `unsupported_control_record_type` for a frontmatter-bearing
+file in one of these Strict paths. Remove the lifecycle frontmatter and keep
+the document as ordinary Markdown.
+
 - `docs/risk/`: risk register and risk-control evidence.
 - `docs/security/`: security controls, findings, and review evidence.
 - `docs/releases/`: release notes and release evidence.

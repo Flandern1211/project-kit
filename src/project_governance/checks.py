@@ -150,6 +150,10 @@ def run_checks(root: str | Path) -> CheckResult:
     )
     required_artifacts = tuple((governance_dir / Path(path).relative_to(Path("docs"))).as_posix() if path.startswith("docs/") else path for path in required_artifacts_for_profile(profile))
     ignored_dirs = {".git", ".agent", ".pytest-tmp", ".pytest_cache", ".superpowers", ".worktrees", ".venv", ".mypy_cache", ".ruff_cache", "node_modules", "dist", "build", ".tmp", "tmp", "temp"}
+    strict_control_prefixes = tuple(
+        f"{governance_dir.as_posix().rstrip('/')}/{suffix}/"
+        for suffix in ("risk", "security", "releases", "operations/runbooks", "operations/incidents", "operations/postmortems")
+    )
     files = sorted(path for path in root.rglob("*.md") if not any(part in ignored_dirs or part.startswith(".pytest-tmp") for part in path.relative_to(root).parts))
     checked_files = tuple(path.relative_to(root).as_posix() for path in files)
     if visibility != "public":
@@ -172,7 +176,10 @@ def run_checks(root: str | Path) -> CheckResult:
     ids: dict[str, str] = {}; records: list[tuple[str, object, str, str]] = []
     for path in files:
         relative = path.relative_to(root).as_posix(); text = path.read_text(encoding="utf-8"); metadata = None; body = text
-        if text.startswith("---"):
+        strict_control_document = profile == "strict" and any(relative.startswith(prefix) for prefix in strict_control_prefixes)
+        if strict_control_document and text.startswith("---"):
+            _issue(issues, "unsupported_control_record_type", relative, "Strict control documents are ordinary Markdown; remove lifecycle frontmatter and do not add a new RecordType")
+        elif text.startswith("---"):
             try: metadata, body = parse_frontmatter(text)
             except FrontmatterError as exc:
                 message = str(exc)
