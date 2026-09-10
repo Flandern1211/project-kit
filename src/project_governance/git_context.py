@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import os
 from pathlib import Path
 import subprocess
 
@@ -23,18 +24,24 @@ def _git(root: Path, *args: str) -> str:
     return p.stdout.strip()
 
 
+def _filesystem_entry_state(path: Path) -> str:
+    try:
+        os.lstat(path)
+    except FileNotFoundError:
+        return "missing"
+    except OSError:
+        return "unreadable"
+    return "present"
+
+
 def _git_inspection_error(root: Path, exc: subprocess.CalledProcessError | OSError) -> GitInspectionError:
     details = " ".join(
         value.strip()
         for value in (getattr(exc, "stdout", ""), getattr(exc, "stderr", ""), str(exc))
         if value and value.strip()
     )
-    lowered = details.casefold()
     git_metadata = root / ".git"
-    if not root.exists() or (
-        not git_metadata.exists()
-        and ("not a git repository" in lowered or "no git repository" in lowered)
-    ):
+    if _filesystem_entry_state(root) == "missing" or _filesystem_entry_state(git_metadata) == "missing":
         return GitInspectionError("git_not_initialized", f"Git repository is not initialized: {root}")
     return GitInspectionError("git_unreadable", f"Git repository is unreadable: {root}; {details or 'inspection failed'}")
 
