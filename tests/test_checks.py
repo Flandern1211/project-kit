@@ -27,3 +27,43 @@ def test_checks_find_broken_links_in_plain_markdown_and_ignores_git_and_temp(tmp
     write(tmp_path/'.pytest-tmp'/'hidden.md', '[bad](missing.md)')
     result = run_checks(tmp_path)
     assert sum(i['code'] == 'broken_link' for i in result.issues) == 6
+
+
+def test_strict_control_document_rejects_lifecycle_frontmatter(tmp_path):
+    from project_governance.scaffold import init_project
+
+    init_project(tmp_path, profile="strict")
+    write(
+        tmp_path / "docs" / "risk" / "RISK-001.md",
+        "---\nid: RISK-001\ntype: risk\nstatus: draft\ncreated: 2026-09-10\nupdated: 2026-09-10\nrelated:\n---\n# Risk\n",
+    )
+
+    result = run_checks(tmp_path)
+
+    assert not result.ok
+    issues = [issue for issue in result.issues if issue["path"] == "docs/risk/RISK-001.md"]
+    assert [issue["code"] for issue in issues] == ["unsupported_control_record_type"]
+    assert "ordinary Markdown" in issues[0]["message"]
+    assert "do not add a new RecordType" in issues[0]["message"]
+
+
+def test_checks_distinguish_unreadable_git_from_uninitialized_git(tmp_path, monkeypatch):
+    from project_governance.git_context import GitInspectionError
+    from project_governance.scaffold import init_project
+
+    init_project(tmp_path)
+    write(
+        tmp_path / "docs" / "work" / "tasks" / "TASK-001.md",
+        "---\nid: TASK-001\ntype: task\nstatus: in_progress\ncreated: 2026-09-10\nupdated: 2026-09-10\nrelated:\n---\n# Task\n",
+    )
+    monkeypatch.setattr(
+        "project_governance.checks.inspect_git",
+        lambda root: (_ for _ in ()).throw(GitInspectionError("git_unreadable", "Git is unreadable")),
+    )
+
+    result = run_checks(tmp_path)
+    codes = {issue["code"] for issue in result.issues}
+
+    assert "git_unreadable" in codes
+    assert "git_not_initialized" not in codes
+    assert "git_state_mismatch" not in codes

@@ -1,7 +1,9 @@
 # Project documentation index
 
 This is the entry point for agents and people. The index is navigation, not a
-second copy of the documents it links to.
+second copy of the documents it links to. Read [STATUS](STATUS.md), then
+[Project structure](project-structure.md) and
+[Project conventions](project-conventions.md) before changing files.
 
 ## Current state
 

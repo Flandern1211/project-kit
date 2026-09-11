@@ -107,6 +107,83 @@ def test_generated_status_and_views_include_required_contract(tmp_path: Path):
     assert "initialize | N/A | N/A | initialized -> requirements_discussion" in activity
 
 
+def test_strict_generation_includes_agent_and_document_map(tmp_path: Path):
+    init_project(tmp_path, profile="strict")
+
+    guidance = (tmp_path / "AGENTS.md").read_text(encoding="utf-8")
+    for record_type in (
+        "requirement",
+        "design",
+        "decision",
+        "task",
+        "bug",
+        "review",
+        "verification",
+        "migration",
+    ):
+        assert record_type in guidance
+    for path in (
+        "docs/requirements/",
+        "docs/design/",
+        "docs/decisions/",
+        "docs/work/tasks/",
+        "docs/work/bugs/",
+        "docs/reviews/",
+        "docs/verification/",
+        "docs/migrations/",
+        "docs/activity/",
+        "docs/operations/runbooks/",
+        "docs/operations/incidents/",
+        "docs/operations/postmortems/",
+        "docs/risk/",
+        "docs/security/",
+        "docs/releases/",
+        "docs/templates/",
+    ):
+        assert path in guidance
+    assert "risk/security/release/runbook" in guidance
+    assert "Do not create" in guidance
+
+    structure = tmp_path / "docs/project-structure.md"
+    assert structure.is_file()
+    index = (tmp_path / "docs/INDEX.md").read_text(encoding="utf-8")
+    assert "[Project structure](project-structure.md)" in index
+
+
+def test_lite_generation_keeps_references_and_finalization_guidance_consistent(tmp_path: Path):
+    init_project(tmp_path, profile="lite")
+
+    for relative in (
+        "AGENTS.md",
+        "docs/INDEX.md",
+        "docs/project-structure.md",
+        "docs/project-conventions.md",
+        "docs/WORKFLOW.md",
+        "docs/templates/INDEX.md",
+    ):
+        assert (tmp_path / relative).is_file()
+
+    guidance = (tmp_path / "AGENTS.md").read_text(encoding="utf-8")
+    assert "`requirement`, `task`, `bug`, and `verification`" in guidance
+    assert "docs/project-structure.md" in guidance
+    assert "docs/project-conventions.md" in guidance
+    assert "Do not edit the repository after the clean-tree check" in guidance
+
+    index = (tmp_path / "docs/INDEX.md").read_text(encoding="utf-8")
+    assert "project-structure.md" in index
+    assert "project-conventions.md" in index
+
+    templates = (tmp_path / "docs/templates/INDEX.md").read_text(encoding="utf-8")
+    assert "migration" not in templates.lower()
+
+    for relative in ("docs/WORKFLOW.md", "docs/project-conventions.md"):
+        content = (tmp_path / relative).read_text(encoding="utf-8")
+        normalized = " ".join(content.split())
+        assert "run semantic checks" in normalized.lower()
+        assert "clean-tree" in content
+        assert "post-commit output" in normalized.lower()
+
+
 def test_generated_record_templates_include_task_git_contract(tmp_path: Path):
     init_project(tmp_path)
     task_template = (tmp_path / "docs/templates/task.md").read_text(encoding="utf-8")

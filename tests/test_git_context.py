@@ -1,7 +1,8 @@
+import os
 import subprocess
 from pathlib import Path
 import pytest
-from project_governance.git_context import inspect_git
+from project_governance.git_context import GitInspectionError, inspect_git
 
 def test_inspect_git_reports_branch_head_status_and_commits(tmp_path):
     subprocess.run(['git','init','-q'], cwd=tmp_path, check=True)
@@ -15,10 +16,87 @@ def test_inspect_git_reports_branch_head_status_and_commits(tmp_path):
 
 
 def test_inspect_git_does_not_inherit_parent_repository(tmp_path):
+    subprocess.run(['git', 'init', '-q'], cwd=tmp_path, check=True)
     nested = tmp_path / "nested"
     nested.mkdir()
-    with pytest.raises(ValueError):
+    with pytest.raises(GitInspectionError) as error:
         inspect_git(nested)
+    assert error.value.code == "git_not_initialized"
+    assert "project root" in str(error.value)
+
+
+def test_inspect_git_classifies_dubious_ownership_as_unreadable(tmp_path, monkeypatch):
+    (tmp_path / ".git").mkdir()
+
+    def fail(*args, **kwargs):
+        raise subprocess.CalledProcessError(
+            128,
+            args,
+            stderr="fatal: detected dubious ownership in repository at 'project'",
+        )
+
+    monkeypatch.setattr("project_governance.git_context.subprocess.run", fail)
+
+    with pytest.raises(GitInspectionError) as error:
+        inspect_git(tmp_path)
+
+    assert error.value.code == "git_unreadable"
+
+
+def test_inspect_git_classifies_unrecognized_failure_as_unreadable(tmp_path, monkeypatch):
+    (tmp_path / ".git").mkdir()
+
+    def fail(*args, **kwargs):
+        raise subprocess.CalledProcessError(
+            128,
+            args,
+            stderr="fatal: dépôt non lisible",
+        )
+
+    monkeypatch.setattr("project_governance.git_context.subprocess.run", fail)
+
+    with pytest.raises(GitInspectionError) as error:
+        inspect_git(tmp_path)
+
+    assert error.value.code == "git_unreadable"
+
+
+def test_inspect_git_does_not_treat_metadata_probe_permission_as_uninitialized(tmp_path, monkeypatch):
+    metadata = tmp_path / ".git"
+    metadata.mkdir()
+    real_lstat = os.lstat
+
+    def permission_probe(path):
+        if path == metadata:
+            raise PermissionError("metadata access denied")
+        return real_lstat(path)
+
+    def fail(*args, **kwargs):
+        raise subprocess.CalledProcessError(
+            128,
+            args,
+            stderr="fatal: repository ownership cannot be verified",
+        )
+
+    monkeypatch.setattr("project_governance.git_context.os.lstat", permission_probe)
+    monkeypatch.setattr("project_governance.git_context.subprocess.run", fail)
+
+    with pytest.raises(GitInspectionError) as error:
+        inspect_git(tmp_path)
+
+    assert error.value.code == "git_unreadable"
+
+
+def test_inspect_git_classifies_missing_git_executable_as_unreadable(tmp_path, monkeypatch):
+    def fail(*args, **kwargs):
+        raise FileNotFoundError(2, "git executable not found")
+
+    monkeypatch.setattr("project_governance.git_context.subprocess.run", fail)
+
+    with pytest.raises(GitInspectionError) as error:
+        inspect_git(tmp_path)
+
+    assert error.value.code == "git_unreadable"
 
 
 def test_inspect_git_reports_dirty_linked_worktree(tmp_path):

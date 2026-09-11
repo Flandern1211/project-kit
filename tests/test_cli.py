@@ -1,4 +1,5 @@
 import json
+import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -122,6 +123,61 @@ def test_cli_doctor_json_keeps_git_available_shape(tmp_path: Path, capsys):
     result = json.loads(capsys.readouterr().out)
     assert result["git"]["available"] is False
     assert {"branch", "head", "dirty", "recent_commits"} <= set(result["git"])
+
+
+def test_cli_doctor_reports_unreadable_git_and_read_only_preflight(tmp_path: Path, capsys, monkeypatch):
+    from project_governance.git_context import GitInspectionError
+
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.email", "a@b.test"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, check=True)
+    assert main(["init", "--root", str(tmp_path), "--json"]) == 0
+    capsys.readouterr()
+    subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-qm", "initial"], cwd=tmp_path, check=True)
+
+    def unreadable(root):
+        raise GitInspectionError("git_unreadable", "Git is unreadable")
+
+    monkeypatch.setattr("project_governance.cli.inspect_git", unreadable)
+    monkeypatch.setattr("project_governance.checks.inspect_git", unreadable)
+
+    assert main(["doctor", "--root", str(tmp_path), "--json"]) == 1
+    result = json.loads(capsys.readouterr().out)
+
+    assert result["git"]["available"] is False
+    assert result["git"]["error_code"] == "git_unreadable"
+    codes = {issue["code"] for issue in result["checks"]["issues"]}
+    assert "git_unreadable" in codes
+    assert "git_not_initialized" not in codes
+    assert result["preflight"]["python"]["executable"]
+    assert result["preflight"]["pytest"]["available"] is True
+    assert result["preflight"]["git"]["readable"] is False
+    assert result["preflight"]["git"]["worktree_state"] == "unreadable"
+    assert result["preflight"]["repository"]["writable"] is True
+    assert result["preflight"]["temporary"]["writable"] is True
+
+
+def test_cli_doctor_reports_clean_initialized_worktree_preflight(tmp_path: Path, capsys):
+    import sys
+
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.email", "a@b.test"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, check=True)
+    assert main(["init", "--root", str(tmp_path), "--json"]) == 0
+    capsys.readouterr()
+    subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-qm", "initial"], cwd=tmp_path, check=True)
+
+    assert main(["doctor", "--root", str(tmp_path), "--json"]) == 0
+    result = json.loads(capsys.readouterr().out)
+
+    assert result["git"]["available"] is True
+    assert result["preflight"]["python"]["executable"] == sys.executable
+    assert result["preflight"]["pytest"]["available"] is True
+    assert result["preflight"]["git"] == {"readable": True, "worktree_state": "clean"}
+    assert result["preflight"]["repository"]["writable"] is True
+    assert result["preflight"]["temporary"]["writable"] is True
 
 
 def test_check_payload_does_not_classify_unrelated_code_as_authorization():

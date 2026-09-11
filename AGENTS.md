@@ -43,3 +43,49 @@ model-provider traffic while working in this repository, it must follow the
 active environment instruction and route it through
 `http://127.0.0.1:7897`; it must not fall back to a direct provider connection.
 
+## Read before acting
+
+Read `AGENTS.md`, `docs/INDEX.md`, `docs/project-structure.md`, and
+`docs/STATUS.md` before changing files. Then read the linked requirement,
+design or decision, task or bug, review, and verification records that govern
+the change.
+
+## Architecture limits
+
+Supported lifecycle RecordTypes are `requirement`, `design`, `decision`,
+`task`, `bug`, `review`, `verification`, and `migration`.
+
+Strict risk/security/release/runbook/incident/postmortem paths contain ordinary
+control Markdown, not new RecordTypes. Do not add lifecycle frontmatter types
+for them. Do not create new governance directories, records, statuses, or
+business modules unless an accepted design and task authorize them. Unknown
+business directories require an accepted design and task before use.
+
+## Repository map
+
+- `docs/requirements/`: product intent and acceptance criteria.
+- `docs/design/`: accepted architecture and implementation design.
+- `docs/decisions/`: durable decisions, alternatives, and consequences.
+- `docs/work/tasks/`: scoped implementation tasks with owner, files, and evidence.
+- `docs/work/bugs/`: reproducible defects and fix scope.
+- `docs/reviews/`: review findings and verdicts.
+- `docs/verification/`: evidence-backed validation.
+- `docs/migrations/`: migration plans and outcomes; source files stay in place.
+- `docs/activity/`: concise activity timeline, not a replacement for records.
+- `docs/operations/runbooks/`, `docs/operations/incidents/`, `docs/operations/postmortems/`: operational control Markdown without lifecycle frontmatter.
+- `docs/risk/`, `docs/security/`, `docs/releases/`: Strict control Markdown without lifecycle frontmatter.
+- `docs/templates/`: supported record templates only.
+- `docs/INDEX.md`, `docs/project-structure.md`, `docs/WORKFLOW.md`, `docs/project-conventions.md`, and `docs/STATUS.md`: navigation, structure, workflow, conventions, and current state.
+- `docs/work/INDEX.md` and `docs/work/BOARD.md`: generated task and bug views.
+
+See `docs/project-structure.md` for the detailed map, including root files,
+`.agent/`, and optional plan directories. Plans, specs, handoffs, indexes,
+boards, and activity are coordination material; lifecycle records are the
+source of truth.
+
+## Two-phase finalization
+
+Complete records and code, run semantic checks, fill evidence, commit once, run
+read-only clean-tree checks, and do not edit the repository after the clean-tree
+check. Put post-commit output in the external experiment report or handoff.
+

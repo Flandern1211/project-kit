@@ -62,6 +62,16 @@ def test_check_uses_strict_profile_required_entries(tmp_path: Path):
     )
 
 
+def test_strict_plain_control_markdown_remains_accepted(tmp_path: Path):
+    init_project(tmp_path, profile="strict")
+    control_path = tmp_path / "docs/risk/RISK-001.md"
+    control_path.write_text("# Risk\n\nReview the payment limit.\n", encoding="utf-8")
+
+    result = run_checks(tmp_path)
+
+    assert result.ok
+
+
 def test_lite_profile_rejects_records_that_are_not_enabled(tmp_path: Path):
     init_project(tmp_path, profile="lite")
 

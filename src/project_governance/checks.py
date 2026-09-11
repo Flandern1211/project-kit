@@ -10,7 +10,7 @@ import subprocess
 from .authorization import _authorization_fields, _when
 from .config import default_visibility_dirs, load_config
 from .frontmatter import FrontmatterError, parse_frontmatter
-from .git_context import inspect_git
+from .git_context import GitInspectionError, inspect_git
 from .migration import _normalize_generated, _render_governance_copy, load_migration_plan
 from .scaffold import required_artifacts_for_profile
 
@@ -150,6 +150,10 @@ def run_checks(root: str | Path) -> CheckResult:
     )
     required_artifacts = tuple((governance_dir / Path(path).relative_to(Path("docs"))).as_posix() if path.startswith("docs/") else path for path in required_artifacts_for_profile(profile))
     ignored_dirs = {".git", ".agent", ".pytest-tmp", ".pytest_cache", ".superpowers", ".worktrees", ".venv", ".mypy_cache", ".ruff_cache", "node_modules", "dist", "build", ".tmp", "tmp", "temp"}
+    strict_control_prefixes = tuple(
+        f"{governance_dir.as_posix().rstrip('/')}/{suffix}/"
+        for suffix in ("risk", "security", "releases", "operations/runbooks", "operations/incidents", "operations/postmortems")
+    )
     files = sorted(path for path in root.rglob("*.md") if not any(part in ignored_dirs or part.startswith(".pytest-tmp") for part in path.relative_to(root).parts))
     checked_files = tuple(path.relative_to(root).as_posix() for path in files)
     if visibility != "public":
@@ -172,7 +176,10 @@ def run_checks(root: str | Path) -> CheckResult:
     ids: dict[str, str] = {}; records: list[tuple[str, object, str, str]] = []
     for path in files:
         relative = path.relative_to(root).as_posix(); text = path.read_text(encoding="utf-8"); metadata = None; body = text
-        if text.startswith("---"):
+        strict_control_document = profile == "strict" and any(relative.startswith(prefix) for prefix in strict_control_prefixes)
+        if strict_control_document and text.startswith("---"):
+            _issue(issues, "unsupported_control_record_type", relative, "Strict control documents are ordinary Markdown; remove lifecycle frontmatter and do not add a new RecordType")
+        elif text.startswith("---"):
             try: metadata, body = parse_frontmatter(text)
             except FrontmatterError as exc:
                 message = str(exc)
@@ -361,15 +368,16 @@ def run_checks(root: str | Path) -> CheckResult:
             right = other_scope.replace('\\', '/').strip().lstrip('./').casefold().rstrip('/')
             if left and right and left != 'n/a' and right != 'n/a' and (left == right or left.startswith(right + '/') or right.startswith(left + '/')):
                 _issue(issues, "overlapping_file_scope", min(relative, other_relative), f"file scope {scope} overlaps {record_id} and {other_id}")
-    try: git = inspect_git(root)
-    except ValueError: git = None
-    same_repository = False
-    if git is not None:
-        try:
-            git_root = Path(subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=root, check=True, capture_output=True, text=True).stdout.strip()).resolve()
-            same_repository = git_root == root.resolve()
-        except (OSError, subprocess.CalledProcessError):
-            same_repository = False
+    git_error: GitInspectionError | None = None
+    try:
+        git = inspect_git(root)
+    except GitInspectionError as exc:
+        git = None
+        git_error = exc
+    except ValueError as exc:
+        git = None
+        git_error = GitInspectionError("git_unreadable", str(exc))
+    same_repository = git is not None
     if git is not None and same_repository:
         if git.dirty: _issue(issues, "dirty_worktree", ".git", "Git worktree has uncommitted changes")
         for worktree in git.worktrees:
@@ -381,14 +389,17 @@ def run_checks(root: str | Path) -> CheckResult:
             normalized_branch = branch.strip().removeprefix("refs/heads/")
             if (normalized_branch.startswith("task/") or normalized_branch.startswith("bug/")) and normalized_branch.casefold() not in registered:
                 _issue(issues, "unregistered_branch", ".git", f"task/bug branch is not registered: {normalized_branch}")
-    if governed_project and git is None:
+    if governed_project and git_error is not None and git_error.code != "git_not_initialized":
+        _issue(issues, git_error.code, ".git", git_error.message)
+    if governed_project and git_error is not None and git_error.code == "git_not_initialized":
         if any(metadata.type.value in {"task", "bug"} and metadata.status.value in {"in_progress", "in_review", "blocked"} for _relative, metadata, _body, _text in records):
             _issue(issues, "git_not_initialized", ".git", "actionable work requires an initialized Git repository")
     if governed_project:
         status_git = re.search(r"(?im)^\s*git_state\s*:\s*([^\s]+)", status_text)
-        expected_git_state = "git_initialized" if same_repository else "git_not_initialized"
-        if status_git and status_git.group(1) != expected_git_state:
-            _issue(issues, "git_state_mismatch", (governance_dir / "STATUS.md").as_posix(), f"status git_state is {status_git.group(1)}, expected {expected_git_state}")
+        if git_error is None or git_error.code == "git_not_initialized":
+            expected_git_state = "git_initialized" if same_repository else "git_not_initialized"
+            if status_git and status_git.group(1) != expected_git_state:
+                _issue(issues, "git_state_mismatch", (governance_dir / "STATUS.md").as_posix(), f"status git_state is {status_git.group(1)}, expected {expected_git_state}")
     issues.sort(key=lambda item: (item["code"], item["path"], item["message"]))
     return CheckResult(not issues, tuple(issues), checked_files)
 
