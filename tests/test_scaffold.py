@@ -107,6 +107,27 @@ def test_generated_status_and_views_include_required_contract(tmp_path: Path):
     assert "initialize | N/A | N/A | initialized -> requirements_discussion" in activity
 
 
+def test_generated_config_and_agent_guidance_use_current_kit_version(tmp_path: Path):
+    from project_governance import __version__
+
+    init_project(tmp_path)
+
+    config = (tmp_path / ".project-governance.toml").read_text(encoding="utf-8")
+    guidance = (tmp_path / "AGENTS.md").read_text(encoding="utf-8")
+    ignore = (tmp_path / ".gitignore").read_text(encoding="utf-8")
+    assert f'kit_version = "{__version__}"' in config
+    assert "Keep STATUS, user-facing documentation, configuration, and behavior synchronized" in guidance
+    assert ".pytest-tmp*/" in ignore
+
+
+def test_generated_conventions_list_all_supported_record_statuses(tmp_path: Path):
+    init_project(tmp_path)
+
+    conventions = (tmp_path / "docs/project-conventions.md").read_text(encoding="utf-8")
+    for status in ("in_review", "superseded"):
+        assert status in conventions
+
+
 def test_strict_generation_includes_agent_and_document_map(tmp_path: Path):
     init_project(tmp_path, profile="strict")
 

@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from project_governance.cli import main
+from project_governance.cli import _parser, main
 from project_governance.records import create_record
 from project_governance.scaffold import init_project
 from project_governance.cli import _check_payload
@@ -100,6 +100,35 @@ def test_cli_check_and_doctor_json_include_governance_and_authorization(tmp_path
     doctor = json.loads(capsys.readouterr().out)
     assert doctor["governance"]["ok"] is True
     assert "authorization" in doctor
+
+
+def test_cli_check_reports_version_drift_in_json(tmp_path: Path, capsys):
+    assert main(["init", "--root", str(tmp_path)]) == 0
+    capsys.readouterr()
+    (tmp_path / "pyproject.toml").write_text(
+        '[project]\nname = "project-governance-kit"\ndynamic = ["version"]\n'
+        '[tool.setuptools.dynamic]\nversion = {attr = "project_governance.version.__version__"}\n',
+        encoding="utf-8",
+    )
+    (tmp_path / ".project-governance.toml").write_text(
+        (tmp_path / ".project-governance.toml").read_text(encoding="utf-8").replace(
+            'kit_version = "0.2.0.dev0"', 'kit_version = "0.1.0.dev0"'
+        ),
+        encoding="utf-8",
+    )
+
+    assert main(["check", "--root", str(tmp_path), "--json"]) == 1
+    result = json.loads(capsys.readouterr().out)
+    assert any(issue["code"] == "version_drift" for issue in result["issues"])
+
+
+def test_usage_capability_matrix_lists_every_cli_command():
+    parser = _parser()
+    choices = next(action.choices for action in parser._actions if action.dest == "command")
+    usage = (Path(__file__).parents[1] / "docs/usage.md").read_text(encoding="utf-8")
+
+    for command in choices:
+        assert f"`pgk {command}`" in usage
 
 
 def test_cli_handoff_dry_run_reports_preview_without_writing(tmp_path: Path, capsys):

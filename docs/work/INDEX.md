@@ -5,6 +5,14 @@ The index is generated from task and bug records.
 
 ## Active
 
+No records yet.
+
+## Planned
+
+No records yet.
+
+## Completed
+
 - [TASK-000](tasks/TASK-000-bootstrap.md) — verified
 - [TASK-001](tasks/TASK-001-add-cli-usage-documentation.md) — verified
 - [TASK-002](tasks/TASK-002-add-chinese-requirements-document.md) — verified
@@ -18,7 +26,8 @@ The index is generated from task and bug records.
 - [TASK-010](tasks/TASK-010-implement-visibility-modes.md) — verified
 - [TASK-011](tasks/TASK-011-implement-v0-2-existing-project-migration.md) — verified
 - [TASK-012](tasks/TASK-012-fix-migration-relative-links.md) — verified
+- [TASK-014](tasks/TASK-014-document-consistency-and-drift-checks.md) — verified
 
 ## Bugs
 
-No bug records yet.
+No records yet.

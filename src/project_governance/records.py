@@ -135,6 +135,16 @@ def create_record(
 def _index_content(candidates: Sequence[RecordCandidate], *, base_dir: Path) -> str:
     tasks = [item for item in candidates if item.metadata.type is RecordType.TASK]
     bugs = [item for item in candidates if item.metadata.type is RecordType.BUG]
+    active_statuses = {"in_progress", "in_review", "blocked"}
+    planned_statuses = {"draft", "accepted"}
+
+    def render(items: Sequence[RecordCandidate]) -> list[str]:
+        lines: list[str] = []
+        for item in sorted(items, key=lambda value: value.metadata.id):
+            relative = item.path.relative_to(base_dir).as_posix()
+            lines.append(f"- [{item.metadata.id}]({relative}) — {item.metadata.status.value}")
+        return lines or ["No records yet."]
+
     lines = [
         "<!-- PGK_GENERATED: work-index -->",
         "# Work index",
@@ -144,19 +154,13 @@ def _index_content(candidates: Sequence[RecordCandidate], *, base_dir: Path) -> 
         "## Active",
         "",
     ]
-    if tasks:
-        for item in tasks:
-            relative = item.path.relative_to(base_dir).as_posix()
-            lines.append(f"- [{item.metadata.id}]({relative}) — {item.metadata.status.value}")
-    else:
-        lines.append("No active records yet.")
+    lines.extend(render([item for item in tasks if item.metadata.status.value in active_statuses]))
+    lines.extend(["", "## Planned", ""])
+    lines.extend(render([item for item in tasks if item.metadata.status.value in planned_statuses]))
+    lines.extend(["", "## Completed", ""])
+    lines.extend(render([item for item in tasks if item.metadata.status.value not in active_statuses | planned_statuses]))
     lines.extend(["", "## Bugs", ""])
-    if bugs:
-        for item in bugs:
-            relative = item.path.relative_to(base_dir).as_posix()
-            lines.append(f"- [{item.metadata.id}]({relative}) — {item.metadata.status.value}")
-    else:
-        lines.append("No bug records yet.")
+    lines.extend(render(bugs))
     return "\n".join(lines) + "\n"
 
 

@@ -16,3 +16,4 @@ The index is generated from records.
 - [TASK-010](TASK-010-implement-visibility-modes.md) — verified
 - [TASK-011](TASK-011-implement-v0-2-existing-project-migration.md) — verified
 - [TASK-012](TASK-012-fix-migration-relative-links.md) — verified
+- [TASK-014](TASK-014-document-consistency-and-drift-checks.md) — verified

@@ -16,7 +16,8 @@ blocked --> requirements_review: revise requirements
 
 ## Two-phase finalization
 
-1. Complete all records, source files, tests, and documentation.
+1. Complete all records, source files, tests, and documentation. Synchronize
+   STATUS, user-facing documentation, and version configuration with behavior.
 2. Run semantic checks while changes are uncommitted.
 3. Fill final evidence and terminal statuses.
 4. Commit the complete task branch once.

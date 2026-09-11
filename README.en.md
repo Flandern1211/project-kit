@@ -89,7 +89,7 @@ pgk check --root . --json
 ```
 
 `pgk new` also supports `requirement`, `design`, `decision`, `task`, `bug`,
-`review`, and `verification`. Write commands support `--dry-run`, and agent callers can use
+`review`, `verification`, and `migration`. Write commands support `--dry-run`, and agent callers can use
 `--json`. See the [usage guide](docs/usage.md) for complete arguments,
 statuses, and collaboration flow.
 
@@ -103,15 +103,16 @@ pgk check      validate documents, links, and status
 pgk new        create a governance record
 pgk index      update the work index
 pgk handoff    update task handoff information
+pgk migrate    plan, approve, and apply existing-document migration
 ```
 
 ## Status
 
-The current version is the pre-release `0.1.0.dev0`. The toolkit repository
+The current version is the pre-release `0.2.0.dev0`. The toolkit repository
 dogfoods its own governance architecture, and TouzhiAgent is its first
 external trial project.
 
-This task branch also contains the v0.2 existing-project migration MVP:
+v0.2 includes the existing-project supplement and document migration MVP:
 
 ```powershell
 pgk init --root C:\path\to\project --mode supplement
@@ -121,11 +122,14 @@ pgk migrate apply MIG-001 --root C:\path\to\project --json
 ```
 
 Migration preserves originals and creates source-hashed `draft` governance copies. Unapproved items are not written, and conflicts or sensitive content are never copied or overwritten.
+Resolvable local Markdown links are rewritten for the copied location; missing targets remain unchanged for human review.
 
 ## Documentation
 
 - [Documentation index](docs/INDEX.md)
 - [Usage guide](docs/usage.md)
-- [v0.1 requirements](docs/requirements/2026-09-02-project-governance-kit-v0.1-requirements.md) · [中文](docs/requirements/2026-09-02-project-governance-kit-v0.1-requirements.zh-CN.md)
-- [v0.1 design](docs/design/2026-09-02-project-governance-kit-v0.1-design.md)
-- [Verification record](docs/verification/VER-000-bootstrap.md)
+- [v0.1 requirements](docs/requirements/2026-09-02-project-governance-kit-v0.1-requirements.md) · [中文权威基线](docs/requirements/2026-09-02-project-governance-kit-v0.1-requirements.zh-CN.md)
+- [v0.1 accepted design](docs/design/2026-09-04-project-governance-kit-v0.1-design.zh-CN.md)
+- [v0.2 migration requirements](docs/requirements/2026-09-07-project-governance-kit-v0.2-migration-requirements.zh-CN.md)
+- [v0.2 migration design](docs/design/2026-09-07-project-governance-kit-v0.2-migration-design.zh-CN.md)
+- [v0.2 migration verification](docs/verification/VER-002-v0-2-migration-mvp.md)

@@ -56,11 +56,11 @@ root
 
 ## Blockers
 
-无代码阻塞；共享 worktree 脏状态和其他未登记分支需要仓库维护者处理。
+无。验证时的共享 worktree 状态已由后续合并收口；受保护 Git/远程动作仍需用户明确授权。
 
 ## Next action
 
-审查完整 diff；受保护 Git/远程动作仍需用户明确授权。
+实现已合并并由 VER-002 验证；后续改动须创建新的 TASK。
 
 ## Files
 
@@ -74,7 +74,7 @@ root
 branch: task/TASK-006-v02-migration
 worktree: C:/Users/31800/.codex/worktrees/bc83/project-kit
 base_commit: 94f663bb2445458e599ce18a72362355c011560a
-head_commit: working tree
+head_commit: 8d57cd7
 
 ## Handoff
 
@@ -84,8 +84,8 @@ Branch: task/TASK-006-v02-migration
 HEAD: 94f663bb2445458e599ce18a72362355c011560a
 Worktree: C:/Users/31800/.codex/worktrees/bc83/project-kit
 Dirty: true
-Uncommitted: v0.2 implementation, tests and documentation
-Verification: 120 tests passed; compileall and git diff --check passed; worktree-local pgk check has only shared-worktree dirty/unregistered-branch findings
-Blockers: shared Git worktree state requires maintainer review; protected Git and remote actions still require explicit user authorization
-Next action: review the complete diff and authorize any specific Git action
+Uncommitted: none at the verification commit
+Verification: 120 tests passed; compileall and git diff --check passed; merged-result verification is recorded in VER-002
+Blockers: none; protected Git and remote actions still require explicit user authorization
+Next action: use a new task record for subsequent migration changes
 <!-- PGK_HANDOFF_END -->

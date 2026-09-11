@@ -52,11 +52,12 @@ root
 
 ## Next action
 
-任务已验证；如需发布文档更新，使用现有任务分支提交并推送。
+任务已验证；README 的当前版本声明由 `pyproject.toml`、`.project-governance.toml`
+和 `pgk check` 一起维护，后续版本变更须创建新的 TASK。
 
 ## Git
 
 branch: task/TASK-007-governance-profiles
 worktree: repository checkout
 base_commit: 4e6294b
-head_commit: working tree
+head_commit: 1f758a0

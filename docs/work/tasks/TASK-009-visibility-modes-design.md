@@ -49,15 +49,15 @@ root
 
 ## Blockers
 
-规格已获用户批准；实现由 TASK-010 执行。
+无。规格已获用户批准，实现由 TASK-010 完成。
 
 ## Next action
 
-规格已审核通过；继续执行 TASK-010。
+规格已审核通过，TASK-010 已完成实现与验证。
 
 ## Git
 
 branch: task/TASK-009-visibility-modes
 worktree: repository checkout
 base_commit: e23fd9a
-head_commit: working tree
+head_commit: 350e9ab

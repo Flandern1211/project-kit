@@ -5,6 +5,7 @@ from datetime import date
 from pathlib import Path
 from .config import default_visibility_dirs, validate_collaboration_mode, validate_profile, validate_visibility, validate_visibility_dirs
 from .git_context import inspect_git
+from .version import __version__
 
 _EMPTY = "# {title}\n\nNo records yet.\n"
 _AGENTS_TEMPLATE = """# Agent instructions for {project_name}
@@ -37,7 +38,7 @@ Do not create new governance directories, records, statuses, or business modules
 - `docs/work/INDEX.md` and `docs/work/BOARD.md`: generated task/bug navigation and board; update source records, then regenerate indexes.
 
 ## State gates
-Requirements are drafts until user confirmation. Before implementation require an accepted requirement, applicable design/ADR, and TASK/BUG with owner and scope. Complete records and code, run semantic checks, fill evidence, commit once, run read-only clean-tree checks. Do not edit the repository after the clean-tree check. Put post-commit output in the external experiment report or handoff.
+Requirements are drafts until user confirmation. Before implementation require an accepted requirement, applicable design/ADR, and TASK/BUG with owner and scope. Keep STATUS, user-facing documentation, configuration, and behavior synchronized in the same change chain. Complete records and code, run semantic checks, fill evidence, commit once, run read-only clean-tree checks. Do not edit the repository after the clean-tree check. Put post-commit output in the external experiment report or handoff.
 
 ## Handoff
 Record completed and remaining work, branch, HEAD, workspace status, uncommitted changes, blockers, verification, and one next action.
@@ -133,7 +134,8 @@ blocked --> requirements_review: revise requirements
 
 ## Two-phase finalization
 
-1. Complete all records, source files, tests, and documentation.
+1. Complete all records, source files, tests, and documentation. Synchronize
+   STATUS, user-facing documentation, and version configuration with behavior.
 2. Run semantic checks while changes are uncommitted.
 3. Fill final evidence and terminal statuses.
 4. Commit the complete task branch once.
@@ -150,8 +152,8 @@ The supported lifecycle RecordTypes are `requirement`, `design`, `decision`,
 `task`, `bug`, `review`, `verification`, and `migration`. Records use YAML
 frontmatter with `id`, `type`, `status`, `created`, and `updated`.
 
-The lifecycle statuses are `draft`, `accepted`, `in_progress`, `blocked`,
-`verified`, `done`, and `rejected`. A record may move to `verified` only when
+The lifecycle statuses are `draft`, `accepted`, `in_progress`, `in_review`,
+`blocked`, `verified`, `done`, `rejected`, and `superseded`. A record may move to `verified` only when
 its verification section names the evidence used.
 
 Strict risk, security, release, runbook, incident, and postmortem documents are
@@ -175,6 +177,14 @@ Verification must name the command or inspection evidence used. A passing test
 suite does not by itself prove external services, deployment, performance, or
 long-running behavior.
 
+## Documentation consistency
+
+Behavior and version changes must update the authoritative requirement/design
+chain, task or bug record, STATUS, user-facing documentation, and version
+configuration in the same change chain. Historical verification keeps the
+evidence captured at that time; current-state documents must not repeat an
+obsolete branch, version, blocker, or implementation status.
+
 ## Two-phase finalization
 
 Complete records and code, run semantic checks, fill evidence, commit once, run
@@ -192,8 +202,8 @@ STANDARD_FILES: dict[str, str] = {
     "README.md": "# {project_name}\n\nStart with [docs/INDEX.md](docs/INDEX.md).\n",
     "CONTRIBUTING.md": "# Contributing to {project_name}\n\nStart non-trivial work from a task or bug record. Keep code, tests, documentation, and verification linked.\n",
     "CHANGELOG.md": "# Changelog\n\n## Unreleased\n\n",
-    ".gitignore": "# Project Governance Kit\n__pycache__/\n*.py[cod]\n.venv/\n.agent/\n",
-    ".project-governance.toml": "kit_version = \"0.1.0\"\nschema_version = 1\nprofile = \"{profile}\"\ncollaboration_mode = \"{collaboration_mode}\"\nvisibility = \"{visibility}\"\ngovernance_dir = \"{governance_dir}\"\npublic_docs_dir = \"{public_docs_dir}\"\ndocs_dir = \"docs\"\nrecords_dir = \"docs/work\"\n",
+    ".gitignore": "# Project Governance Kit\n__pycache__/\n*.py[cod]\n.venv/\n.pytest_cache/\n.pytest-tmp*/\n.agent/\n",
+    ".project-governance.toml": "kit_version = \"{kit_version}\"\nschema_version = 1\nprofile = \"{profile}\"\ncollaboration_mode = \"{collaboration_mode}\"\nvisibility = \"{visibility}\"\ngovernance_dir = \"{governance_dir}\"\npublic_docs_dir = \"{public_docs_dir}\"\ndocs_dir = \"docs\"\nrecords_dir = \"docs/work\"\n",
     "docs/INDEX.md": "# Project documentation index\n\nRead [STATUS](STATUS.md), then [Project structure](project-structure.md) and [Project conventions](project-conventions.md). Next read the relevant requirement, design, task, review, verification, and migration records.\n",
     "docs/STATUS.md": "# Project status\n\n```yaml\nproject_stage: requirements_discussion\nprofile: {profile}\ncollaboration_mode: {collaboration_mode}\ncurrent_requirement: N/A\ncurrent_design: N/A\ncurrent_task: N/A\nowner: N/A\nblocker: none\nnext_action: discuss and record project requirements\nupdated: {date}\ngit_state: {git_state}\n```\n\nNo business requirements are created by initialization.\n",
     "docs/WORKFLOW.md": _WORKFLOW_TEMPLATE,
@@ -213,7 +223,7 @@ STANDARD_FILES: dict[str, str] = {
     "docs/operations/runbooks/INDEX.md": _EMPTY.format(title="Runbooks index"),
     "docs/operations/incidents/INDEX.md": _EMPTY.format(title="Incidents index"),
     "docs/operations/postmortems/INDEX.md": _EMPTY.format(title="Postmortems index"),
-    "docs/work/INDEX.md": "<!-- PGK_GENERATED: work-index -->\n# Work index\n\nThe index is generated from task and bug records.\n\n## Active\n\nNo active records yet.\n\n## Bugs\n\nNo bug records yet.\n",
+    "docs/work/INDEX.md": "<!-- PGK_GENERATED: work-index -->\n# Work index\n\nThe index is generated from task and bug records.\n\n## Active\n\nNo records yet.\n\n## Planned\n\nNo records yet.\n\n## Completed\n\nNo records yet.\n\n## Bugs\n\nNo records yet.\n",
 }
 for _kind in ("requirement", "design", "decision", "task", "bug", "verification"):
     _template = f"# {_kind.title()} template\n\n## Purpose\n"
@@ -367,7 +377,7 @@ def init_project(root: str | Path, *, project_name: str | None = None, profile: 
                     rendered = f"# {name}\n\nStart with [{landing}]({landing}).\n"
                 if visibility != "public" and relative not in {"README.md", ".gitignore", ".project-governance.toml"}:
                     rendered = rendered.replace("docs/", f"{governance_dir}/")
-                rendered = rendered.format(project_name=name, date=date.today().isoformat(), git_state=git_state, profile=profile, collaboration_mode=collaboration_mode, visibility=visibility, governance_dir=governance_dir, public_docs_dir=public_docs_dir)
+                rendered = rendered.format(project_name=name, date=date.today().isoformat(), git_state=git_state, profile=profile, collaboration_mode=collaboration_mode, visibility=visibility, governance_dir=governance_dir, public_docs_dir=public_docs_dir, kit_version=__version__)
                 if mode == "supplement" and relative.endswith("STATUS.md"):
                     rendered = rendered.replace("project_stage: requirements_discussion", "project_stage: adoption_review", 1)
                 path.write_text(rendered, encoding="utf-8")

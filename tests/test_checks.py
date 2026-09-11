@@ -20,6 +20,60 @@ def test_checks_clean_fixture(tmp_path):
     write(tmp_path/'docs'/'a.md', '[ok](../AGENTS.md)')
     assert run_checks(tmp_path).ok
 
+
+def test_checks_report_project_version_drift(tmp_path):
+    from project_governance.scaffold import init_project
+
+    init_project(tmp_path)
+    (tmp_path / "pyproject.toml").write_text(
+        '[project]\nname = "project-governance-kit"\nversion = "0.2.0.dev0"\n',
+        encoding="utf-8",
+    )
+    (tmp_path / ".project-governance.toml").write_text(
+        'kit_version = "0.1.0.dev0"\nprofile = "standard"\n',
+        encoding="utf-8",
+    )
+    (tmp_path / "README.md").write_text(
+        "Current version is `0.1.0.dev0`.\n",
+        encoding="utf-8",
+    )
+
+    result = run_checks(tmp_path)
+
+    assert not result.ok
+    assert any(issue["code"] == "version_drift" for issue in result.issues)
+
+
+def test_checks_do_not_compare_business_version_with_kit_version(tmp_path):
+    from project_governance.scaffold import init_project
+
+    init_project(tmp_path)
+    (tmp_path / "pyproject.toml").write_text(
+        '[project]\nname = "business-app"\nversion = "9.4.1"\n',
+        encoding="utf-8",
+    )
+    config = tmp_path / ".project-governance.toml"
+    config.write_text(config.read_text(encoding="utf-8") + 'plugin_option = "enabled"\n', encoding="utf-8")
+
+    assert run_checks(tmp_path).ok
+
+
+def test_checks_report_unknown_project_kit_config_fields(tmp_path):
+    from project_governance.scaffold import init_project
+
+    init_project(tmp_path)
+    (tmp_path / "pyproject.toml").write_text(
+        '[project]\nname = "project-governance-kit"\ndynamic = ["version"]\n'
+        '[tool.setuptools.dynamic]\nversion = {attr = "project_governance.version.__version__"}\n',
+        encoding="utf-8",
+    )
+    config = tmp_path / ".project-governance.toml"
+    config.write_text(config.read_text(encoding="utf-8") + 'docs_root = "docs"\n', encoding="utf-8")
+
+    result = run_checks(tmp_path)
+
+    assert any(issue["code"] == "unknown_config_field" for issue in result.issues)
+
 def test_checks_find_broken_links_in_plain_markdown_and_ignores_git_and_temp(tmp_path):
     for name in ('AGENTS.md','README.md','.gitignore','.project-governance.toml','CONTRIBUTING.md','CHANGELOG.md','docs/INDEX.md','docs/STATUS.md'):
         write(tmp_path/name, '[bad](missing.md)')

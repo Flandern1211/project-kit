@@ -77,8 +77,9 @@ pgk handoff TASK-001 --root . --next-action "run integration tests" --verificati
 pgk check --root . --json
 ```
 
-`pgk new` 也支持 `requirement`、`design`、`decision`、`task`、`bug`、`review` 和
-`verification`。写入命令支持 `--dry-run`，面向 Agent 的调用可使用 `--json`。
+`pgk new` 也支持 `requirement`、`design`、`decision`、`task`、`bug`、`review`、
+`verification` 和 `migration`。写入命令支持 `--dry-run`，面向 Agent 的调用可使用
+`--json`。
 完整参数、状态和协作流程见[使用说明](docs/usage.md)。
 
 常用命令：
@@ -91,14 +92,15 @@ pgk check      检查文档、链接和状态
 pgk new        创建治理记录
 pgk index      更新工作索引
 pgk handoff    更新任务交接信息
+pgk migrate    生成、批准和应用已有文档迁移方案
 ```
 
 ## 当前状态
 
-当前版本为预发布版本 `0.1.0.dev0`。工具包仓库自身使用这套治理架构进行开发和验证，
+当前版本为预发布版本 `0.2.0.dev0`。工具包仓库自身使用这套治理架构进行开发和验证，
 TouzhiAgent 是第一个外部试验项目。
 
-当前任务分支还包含 v0.2 已有项目接入与文档迁移 MVP：
+v0.2 已实现已有项目补齐与文档迁移 MVP：
 
 ```powershell
 pgk init --root C:\path\to\project --mode supplement
@@ -108,11 +110,14 @@ pgk migrate apply MIG-001 --root C:\path\to\project --json
 ```
 
 迁移会保留原文件，只生成带来源哈希的 `draft` 治理副本；未批准条目不会写入，冲突和敏感内容不会被覆盖或复制。
+Markdown 副本会重写可解析的本地相对链接，目标不存在时保留原链接并交由人工审查。
 
 ## 文档
 
 - [项目文档索引](docs/INDEX.md)
 - [使用说明](docs/usage.md)
-- [v0.1 需求（中文版）](docs/requirements/2026-09-02-project-governance-kit-v0.1-requirements.zh-CN.md)
-- [v0.1 设计](docs/design/2026-09-02-project-governance-kit-v0.1-design.md)
-- [验收记录](docs/verification/VER-000-bootstrap.md)
+- [v0.1 需求（中文版，权威基线）](docs/requirements/2026-09-02-project-governance-kit-v0.1-requirements.zh-CN.md)
+- [v0.1 设计（中文版，已确认）](docs/design/2026-09-04-project-governance-kit-v0.1-design.zh-CN.md)
+- [v0.2 迁移需求](docs/requirements/2026-09-07-project-governance-kit-v0.2-migration-requirements.zh-CN.md)
+- [v0.2 迁移设计](docs/design/2026-09-07-project-governance-kit-v0.2-migration-design.zh-CN.md)
+- [v0.2 迁移验证](docs/verification/VER-002-v0-2-migration-mvp.md)

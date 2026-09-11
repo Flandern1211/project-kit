@@ -40,6 +40,7 @@ second copy of the documents it links to. Read [STATUS](STATUS.md), then
 - [TASK-010: implement visibility modes](work/tasks/TASK-010-implement-visibility-modes.md)
 - [TASK-011: v0.2 existing-project migration](work/tasks/TASK-011-implement-v0-2-existing-project-migration.md)
 - [TASK-012: fix migration relative links](work/tasks/TASK-012-fix-migration-relative-links.md)
+- [TASK-014: document consistency and drift checks](work/tasks/TASK-014-document-consistency-and-drift-checks.md)
 - [VER-002: v0.2 migration MVP verification](verification/VER-002-v0-2-migration-mvp.md)
 - [VER-003: migration relative-link verification](verification/VER-003-migration-relative-links.md)
 - [v0.2 migration implementation plan](superpowers/plans/2026-09-07-project-governance-kit-v0.2-migration-implementation.md)

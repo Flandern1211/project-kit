@@ -74,4 +74,4 @@ hybrid、public 初始化与 `pgk check` 均通过，team-private 需求记录�
 branch: task/TASK-009-visibility-modes
 worktree: repository checkout
 base_commit: e23fd9a
-head_commit: working tree
+head_commit: 350e9ab

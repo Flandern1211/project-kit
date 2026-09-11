@@ -7,6 +7,22 @@ This guide explains how to use Project Governance Kit (`pgk`). The commands
 manage governance records only; they do not write business code, run the
 project itself, or mutate remote platforms.
 
+## 0. 当前已实现能力 / Implemented capabilities
+
+| 命令 | 当前实现 | 写入边界 | 人工审查重点 |
+|---|---|---|---|
+| `pgk init` | 新项目初始化、已有项目 `supplement` 补齐、Lite/Standard/Strict、single/sequential、team-private/hybrid/public | 只创建缺失文件；不覆盖已有文件 | profile、协作模式、visibility 和目标目录 |
+| `pgk adopt` | 只读盘点已有治理文件、Git 状态、候选文档和敏感项 | 不写文件 | 候选类型、敏感内容和排除规则 |
+| `pgk doctor` | 汇总 check、adoption、Git 和 Python/pytest/临时目录预检 | 只读 | 环境阻塞与治理问题必须分开判断 |
+| `pgk check` | 检查基线、链接、frontmatter、ID、状态、索引、STATUS 引用、配置、Kit 版本、Git 和迁移结果 | 只读；发现问题返回退出码 1 | 不得把 dirty/unregistered 等问题误报为已验证 |
+| `pgk new` | 创建 requirement/design/decision/task/bug/review/verification/migration 记录 | 拒绝重复 ID 和覆盖；支持 `--dry-run` | 上游记录、owner、scope 和证据字段 |
+| `pgk index` | 重建记录索引、工作索引和 BOARD | 只重写带 `PGK_GENERATED` 标记的视图 | 记录是否完整入索引 |
+| `pgk handoff` | 更新 TASK/BUG 的受控 handoff 区块和活动记录 | 只写标记区；不改变 frontmatter 状态 | branch、HEAD、dirty、未提交内容、阻塞和唯一下一步 |
+| `pgk migrate` | 包含 `plan`、`approve`、`apply`：扫描、审查并执行文档迁移 | 原文件不移动、不删除；只应用明确批准的条目 | 来源、目标、哈希、敏感性、置信度、链接、冲突和 VER 证据 |
+
+当前不实现：parallel Agent 调度、自动 Git commit/push/merge、Issue/PR 或远程仓库操作、
+Web 管理后台、模型调用、公开副本导出、历史清理以及 Markdown/UTF-8 纯文本之外的自动转换。
+
 ## 1. 安装 / Install
 
 在工具包仓库或已打包的发布版本中安装：
@@ -180,11 +196,13 @@ pgk check --root .
 pgk doctor --root .
 ```
 
-`check` 检查治理基线、Markdown 本地链接、frontmatter、重复 ID 和状态。
+`check` 检查治理基线、Markdown 本地链接、frontmatter、重复 ID、状态、STATUS 引用、
+Kit 版本一致性和当前 Git 分支状态。
 发现问题时返回退出码 `1`；命令错误或参数错误返回 `2`。
 
 `check` validates governance baselines, local Markdown links, frontmatter,
-duplicate IDs, and statuses. It exits with `1` when issues are found and `2`
+duplicate IDs, statuses, STATUS references, Kit version consistency, and current
+Git branch state. It exits with `1` when issues are found and `2`
 for command or runtime errors.
 
 面向 Agent 时使用稳定 JSON 输出：

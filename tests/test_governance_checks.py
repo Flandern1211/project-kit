@@ -245,6 +245,60 @@ def test_checks_validate_status_and_generated_view_contracts(tmp_path: Path):
     assert "invalid_activity_header" in codes
 
 
+def test_checks_validate_status_record_references(tmp_path: Path):
+    init_project(tmp_path)
+    task = create_record(tmp_path, "task", "TASK-404", "Status reference type fixture")
+    task_text = task.read_text(encoding="utf-8").replace("related:\n---", "related:\n  - REQ-001\n---")
+    task.write_text(task_text, encoding="utf-8")
+    status = tmp_path / "docs/STATUS.md"
+    status.write_text(
+        status.read_text(encoding="utf-8")
+        .replace("current_requirement: N/A", "current_requirement: TASK-404")
+        .replace("current_design: N/A", "current_design: DES-404")
+        .replace("current_task: N/A", "active_task: TASK-405\ncurrent_task: TASK-404"),
+        encoding="utf-8",
+    )
+
+    result = run_checks(tmp_path)
+    issues = [issue for issue in result.issues if issue["path"] == "docs/STATUS.md"]
+
+    assert any(issue["code"] == "invalid_status_reference" and "current_requirement" in issue["message"] for issue in issues)
+    assert any(issue["code"] == "unknown_status_reference" and "current_design" in issue["message"] for issue in issues)
+    assert any(issue["code"] == "status_reference_mismatch" for issue in issues)
+
+
+def test_checks_require_status_upstreams_to_match_current_task(tmp_path: Path):
+    init_project(tmp_path)
+    for record_id, kind in (
+        ("REQ-001", "requirement"),
+        ("REQ-002", "requirement"),
+        ("DES-001", "design"),
+        ("DES-002", "design"),
+    ):
+        create_record(tmp_path, kind, record_id, record_id, status="accepted")
+    create_record(
+        tmp_path, "task", "TASK-001", "Current task", status="in_progress",
+        related=("REQ-001", "DES-001"),
+    )
+    status = tmp_path / "docs/STATUS.md"
+    status.write_text(
+        status.read_text(encoding="utf-8")
+        .replace("current_requirement: N/A", "current_requirement: REQ-002")
+        .replace("current_design: N/A", "current_design: DES-002")
+        .replace("current_task: N/A", "current_task: TASK-001"),
+        encoding="utf-8",
+    )
+
+    result = run_checks(tmp_path)
+    messages = [
+        issue["message"] for issue in result.issues
+        if issue["code"] == "status_reference_mismatch"
+    ]
+
+    assert any("current_requirement" in message for message in messages)
+    assert any("current_design" in message for message in messages)
+
+
 def test_checks_require_review_and_verification_contract_sections(tmp_path: Path):
     init_project(tmp_path)
     review = tmp_path / "docs/reviews/REVIEW-001-review.md"
@@ -303,6 +357,49 @@ def test_checks_accept_branch_declared_by_verified_task(tmp_path: Path):
 
     assert not any(
         issue["code"] == "unregistered_branch" and "task/TASK-901-verified" in issue["message"]
+        for issue in result.issues
+    )
+
+
+def test_checks_ignore_unregistered_branch_already_merged_into_head(tmp_path: Path):
+    _git(tmp_path, "init", "--quiet")
+    _git(tmp_path, "config", "user.email", "test@example.test")
+    _git(tmp_path, "config", "user.name", "Test")
+    init_project(tmp_path)
+    _git(tmp_path, "add", ".")
+    _git(tmp_path, "commit", "-qm", "baseline")
+    main_branch = subprocess.run(
+        ["git", "branch", "--show-current"], cwd=tmp_path, check=True,
+        capture_output=True, text=True,
+    ).stdout.strip()
+    _git(tmp_path, "checkout", "-qb", "task/TASK-999-historical")
+    (tmp_path / "historical.txt").write_text("merged", encoding="utf-8")
+    _git(tmp_path, "add", "historical.txt")
+    _git(tmp_path, "commit", "-qm", "historical task")
+    _git(tmp_path, "checkout", "-q", main_branch)
+    _git(tmp_path, "merge", "--no-ff", "-qm", "merge historical task", "task/TASK-999-historical")
+
+    result = run_checks(tmp_path)
+
+    assert not any(
+        issue["code"] == "unregistered_branch" and "task/TASK-999-historical" in issue["message"]
+        for issue in result.issues
+    )
+
+
+def test_checks_report_current_unregistered_task_branch(tmp_path: Path):
+    _git(tmp_path, "init", "--quiet")
+    _git(tmp_path, "config", "user.email", "test@example.test")
+    _git(tmp_path, "config", "user.name", "Test")
+    init_project(tmp_path)
+    _git(tmp_path, "add", ".")
+    _git(tmp_path, "commit", "-qm", "baseline")
+    _git(tmp_path, "checkout", "-qb", "task/TASK-999-unregistered")
+
+    result = run_checks(tmp_path)
+
+    assert any(
+        issue["code"] == "unregistered_branch" and "task/TASK-999-unregistered" in issue["message"]
         for issue in result.issues
     )
 

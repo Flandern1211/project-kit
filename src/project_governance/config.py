@@ -91,7 +91,7 @@ def load_config(path: Path) -> ProjectConfig:
         scan_roots = (scan_roots,)
     if isinstance(exclude_patterns, str):
         exclude_patterns = (exclude_patterns,)
-    known = {"profile", "collaboration_mode", "visibility", "docs_dir", "records_dir", "template_dir", "governance_dir", "public_docs_dir", "scan_roots", "exclude_patterns"}
+    known = {"kit_version", "schema_version", "profile", "collaboration_mode", "visibility", "docs_dir", "records_dir", "template_dir", "governance_dir", "public_docs_dir", "scan_roots", "exclude_patterns"}
     return ProjectConfig(
         profile=profile,
         collaboration_mode=collaboration_mode,

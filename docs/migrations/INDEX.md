@@ -1,6 +1,6 @@
 <!-- PGK_GENERATED: migration-index -->
 # Migration index
 
-The index is generated from migration records.
+The index is generated from records.
 
-No migration records yet.
+No records yet.

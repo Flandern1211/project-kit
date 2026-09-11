@@ -13,6 +13,8 @@ provide a runtime logging service.
 - Read the linked requirement and design record before changing behavior.
 - Use one task record for every non-trivial change and keep its status current.
 - Keep code, tests, and required documentation in the same change chain.
+- Keep `docs/STATUS.md`, user-facing documentation, version configuration,
+  and implemented behavior synchronized in that change chain.
 - Run `pgk check` (or the equivalent Python module command) before handoff or
   pull request review.
 - Do not mark work verified without test or inspection evidence.

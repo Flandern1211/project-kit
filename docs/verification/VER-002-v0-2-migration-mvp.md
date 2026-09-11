@@ -67,8 +67,8 @@ py -3 -m project_governance check --root . --json
 
 ## Blockers
 
-无代码阻塞。共享 Git 工作区的脏状态和其他未登记分支需要仓库维护者在合并前按其所属任务处理。
+无代码阻塞。验证记录中的 worktree 状态是当时的历史快照，当前状态以 `docs/STATUS.md` 和最新 Git 检查为准。
 
 ## Next action
 
-审查本分支完整 diff；获得明确授权后再决定是否 commit、push 或创建 PR。
+后续迁移变更使用新的 TASK，并重新生成迁移和验证证据。

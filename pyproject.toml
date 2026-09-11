@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "project-governance-kit"
-version = "0.2.0.dev0"
+dynamic = ["version"]
 description = "Agent-first project governance toolkit"
 requires-python = ">=3.11"
 dependencies = []
@@ -20,6 +20,9 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 project_governance = ["templates/*.md"]
+
+[tool.setuptools.dynamic]
+version = {attr = "project_governance.version.__version__"}
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

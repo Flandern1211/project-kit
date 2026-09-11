@@ -1,9 +1,10 @@
-kit_version = "0.1.0.dev0"
+kit_version = "0.2.0.dev0"
 schema_version = 1
 profile = "standard"
-docs_root = "docs"
-task_record = "repository_markdown"
-issue_provider = "github"
-branch_prefix = "codex/"
-handoff_mode = "task_section"
+collaboration_mode = "single-agent"
+visibility = "public"
+governance_dir = "docs"
+public_docs_dir = "docs"
+docs_dir = "docs"
+records_dir = "docs/work"
 

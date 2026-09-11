@@ -7,8 +7,8 @@ and `MIG-`. The supported lifecycle RecordTypes are `requirement`, `design`,
 `decision`, `task`, `bug`, `review`, `verification`, and `migration`. Records
 use YAML frontmatter with `id`, `type`, `status`, `created`, and `updated`.
 
-The v0.1 lifecycle statuses are `draft`, `accepted`, `in_progress`, `blocked`,
-`verified`, `done`, and `rejected`. A record may move to `verified` only when
+The lifecycle statuses are `draft`, `accepted`, `in_progress`, `in_review`,
+`blocked`, `verified`, `done`, `rejected`, and `superseded`. A record may move to `verified` only when
 its verification section names the evidence used.
 
 The index links to records but does not duplicate their bodies. Meaningful
@@ -31,6 +31,18 @@ silently modify the implementer's branch.
 Verification must name the command or inspection evidence used. A passing test
 suite does not by itself prove external services, deployment, performance, or
 long-running behavior.
+
+## Documentation consistency
+
+Behavior and version changes must update the authoritative requirement/design
+chain, task or bug record, `docs/STATUS.md`, user-facing documentation, and
+version configuration in the same change chain. Historical verification keeps
+the evidence captured at that time; current-state documents must not repeat an
+obsolete branch, version, blocker, or implementation status.
+
+For Project Governance Kit itself, `pgk check` compares the package version
+with `.project-governance.toml`, `docs/STATUS.md`, `README.md`, and
+`README.en.md`. A mismatch is a release and handoff blocker.
 
 ## Two-phase finalization
 

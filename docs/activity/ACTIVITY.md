@@ -22,3 +22,5 @@
 2026-09-08 | root | start | TASK-012 | task/TASK-012-migration-relative-links | reproduce and fix migrated Markdown relative links
 2026-09-08 | root | verify | VER-003 | task/TASK-012-migration-relative-links | 139 tests passed; TouzhiAgent clone check has no broken-link issues
 2026-09-08 | root | merge | TASK-012 | main@7ebef4c | relative-link repair merged locally; push not authorized
+2026-09-11T11:52:36+08:00 | pgk | create | TASK-014 | N/A | created
+2026-09-11 | root | verify | TASK-014 | task/TASK-014-document-consistency | 161 tests passed; wheel version 0.2.0.dev0; semantic checks passed

@@ -3,7 +3,7 @@ id: ADR-0003
 type: decision
 status: accepted
 created: 2026-09-07
-updated: 2026-09-07
+updated: 2026-09-11
 related:
   - ADR-0002
   - TASK-009
@@ -38,8 +38,8 @@ related:
 
 ## Blockers
 
-书面规格尚待用户审核；实现尚未开始。
+无。实现和验证已由 TASK-010 完成；公开副本导出、仓库拆分、历史清理和远程权限修改仍属延期范围。
 
 ## Next action
 
-用户审核规格后，创建实现计划并进入测试驱动开发。
+继续按 TASK-010、VER-002 和当前 `docs/STATUS.md` 维护已实现的可见性边界。

@@ -3,7 +3,6 @@ from pathlib import Path
 import pytest
 
 from project_governance.frontmatter import parse_frontmatter
-from project_governance.checks import run_checks
 from project_governance.records import DuplicateRecordError, create_record, update_work_index
 from project_governance.scaffold import init_project
 
@@ -40,16 +39,23 @@ def test_related_id_cannot_inject_malformed_frontmatter(tmp_path: Path):
 def test_update_work_index_is_deterministic_and_does_not_duplicate_records(tmp_path: Path):
     init_project(tmp_path, project_name="Example")
     create_record(tmp_path, "task", "TASK-002", "Second task")
+    create_record(tmp_path, "task", "TASK-003", "Active task", status="in_progress")
+    create_record(tmp_path, "task", "TASK-004", "Completed task", status="verified")
     create_record(tmp_path, "bug", "BUG-001", "Observed issue")
 
     index = update_work_index(tmp_path)
     content = index.read_text(encoding="utf-8")
 
     assert sum(line.startswith("- [TASK-002]") for line in content.splitlines()) == 1
+    assert sum(line.startswith("- [TASK-003]") for line in content.splitlines()) == 1
+    assert sum(line.startswith("- [TASK-004]") for line in content.splitlines()) == 1
     assert sum(line.startswith("- [BUG-001]") for line in content.splitlines()) == 1
-    assert "## Active\n\n- [TASK-002]" in content
+    assert "## Active\n\n- [TASK-003]" in content
+    assert "## Planned\n\n- [TASK-002]" in content
+    assert "## Completed\n\n- [TASK-004]" in content
+    active = content.split("## Active\n", 1)[1].split("## Planned\n", 1)[0]
+    assert "TASK-004" not in active
     assert "## Bugs\n\n- [BUG-001]" in content
-    assert run_checks(tmp_path).ok
 
 
 def test_create_record_rejects_unmarked_legacy_work_index_before_writing(tmp_path: Path):

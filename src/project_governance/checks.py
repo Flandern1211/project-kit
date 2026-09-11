@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import re
 import subprocess
+import tomllib
 
 from .authorization import _authorization_fields, _when
 from .config import default_visibility_dirs, load_config
@@ -13,6 +14,7 @@ from .frontmatter import FrontmatterError, parse_frontmatter
 from .git_context import GitInspectionError, inspect_git
 from .migration import _normalize_generated, _render_governance_copy, load_migration_plan
 from .scaffold import required_artifacts_for_profile
+from .version import __version__
 
 BASELINE = ("AGENTS.md", "README.md", ".gitignore", ".project-governance.toml", "CONTRIBUTING.md", "CHANGELOG.md", "docs/INDEX.md", "docs/STATUS.md")
 REQUIRED_VIEWS = ("docs/STATUS.md", "docs/WORKFLOW.md", "docs/work/BOARD.md", "docs/activity/ACTIVITY.md")
@@ -126,8 +128,120 @@ def _check_authorization(path: str, text: str, issues: list[dict[str, str]]) -> 
     if start is None or expiry is None or (start and expiry and expiry <= start):
         _issue(issues, "invalid_authorization", path, "authorization validity interval is invalid")
 
+
+def _check_project_version(root: Path, issues: list[dict[str, str]]) -> None:
+    """Keep the package, Kit config, STATUS, and README version claims aligned."""
+
+    pyproject_path = root / "pyproject.toml"
+    config_path = root / ".project-governance.toml"
+    if not pyproject_path.is_file() or not config_path.is_file():
+        return
+    try:
+        with pyproject_path.open("rb") as handle:
+            pyproject = tomllib.load(handle)
+        project = pyproject.get("project", {})
+        package_name = str(project.get("name", "")).strip()
+        if package_name != "project-governance-kit":
+            return
+        declared_version = str(project.get("version", "")).strip()
+        dynamic_fields = project.get("dynamic", ())
+        if declared_version and declared_version != __version__:
+            _issue(issues, "version_drift", "pyproject.toml", f"project.version {declared_version} does not match package version {__version__}")
+        elif not declared_version and "version" not in dynamic_fields:
+            _issue(issues, "version_metadata_missing", "pyproject.toml", "project version must be declared or configured as dynamic")
+        elif not declared_version:
+            dynamic_version = (
+                pyproject.get("tool", {})
+                .get("setuptools", {})
+                .get("dynamic", {})
+                .get("version", {})
+            )
+            if dynamic_version.get("attr") != "project_governance.version.__version__":
+                _issue(issues, "version_metadata_missing", "pyproject.toml", "dynamic version must use project_governance.version.__version__")
+        package_version = __version__
+        with config_path.open("rb") as handle:
+            config_data = tomllib.load(handle)
+        kit_version = str(config_data.get("kit_version", "")).strip()
+        known_config_fields = {
+            "kit_version", "schema_version", "profile", "collaboration_mode",
+            "visibility", "docs_dir", "records_dir", "template_dir",
+            "governance_dir", "public_docs_dir", "scan_roots", "exclude_patterns",
+        }
+        for field in sorted(set(config_data) - known_config_fields):
+            _issue(issues, "unknown_config_field", ".project-governance.toml", f"unknown project governance field: {field}")
+    except (OSError, tomllib.TOMLDecodeError, AttributeError, TypeError, ValueError) as exc:
+        _issue(issues, "version_metadata_unreadable", "pyproject.toml", f"cannot read project version metadata: {exc}")
+        return
+    if not package_version or not kit_version:
+        _issue(issues, "version_metadata_missing", ".project-governance.toml", "project version and kit_version must both be declared")
+        return
+    if package_version != kit_version:
+        _issue(issues, "version_drift", ".project-governance.toml", f"kit_version {kit_version} does not match pyproject project.version {package_version}")
+    expected = package_version
+    governance_dir = Path(str(config_data.get("governance_dir", "docs")))
+    status_path = root / governance_dir / "STATUS.md"
+    if status_path.is_file():
+        status_text = status_path.read_text(encoding="utf-8")
+        match = re.search(r"(?im)^\s*version\s*:\s*([^\s]+)", status_text)
+        if not match or match.group(1).strip() != expected:
+            actual = match.group(1).strip() if match else "missing"
+            _issue(issues, "version_drift", status_path.relative_to(root).as_posix(), f"STATUS version {actual} does not match project version {expected}")
+    readme_patterns = {
+        "README.md": r"当前版本为预发布版本\s+`([^`]+)`",
+        "README.en.md": r"The current version is the pre-release\s+`([^`]+)`",
+    }
+    for readme_name, pattern in readme_patterns.items():
+        readme_path = root / readme_name
+        if not readme_path.is_file():
+            continue
+        readme_text = readme_path.read_text(encoding="utf-8")
+        match = re.search(pattern, readme_text, re.I)
+        actual = match.group(1).strip() if match else "missing"
+        if actual != expected:
+            _issue(issues, "version_drift", readme_name, f"current README version {actual} does not match project version {expected}")
+
+
+def _check_status_references(
+    status_text: str,
+    records: dict[str, tuple[str, object]],
+    status_path: str,
+    issues: list[dict[str, str]],
+) -> None:
+    """Ensure the status entry points resolve to records of the right type."""
+
+    expected_types = {
+        "current_requirement": "requirement",
+        "current_design": "design",
+        "current_task": "task",
+        "active_task": "task",
+    }
+    values: dict[str, str] = {}
+    for field, expected_type in expected_types.items():
+        match = re.search(rf"(?im)^\s*{field}\s*:\s*([^\s]+)", status_text)
+        if not match:
+            continue
+        value = match.group(1).strip().strip('`"\'')
+        values[field] = value
+        if value.casefold() in {"n/a", "none"}:
+            continue
+        record = records.get(value)
+        if record is None:
+            _issue(issues, "unknown_status_reference", status_path, f"{field} references missing record: {value}")
+        elif getattr(record[1], "type", None).value != expected_type:
+            _issue(issues, "invalid_status_reference", status_path, f"{field} must reference a {expected_type} record: {value}")
+    if values.get("active_task") and values.get("current_task") and values["active_task"] != values["current_task"]:
+        _issue(issues, "status_reference_mismatch", status_path, "active_task and current_task must reference the same task")
+    current_task = records.get(values.get("current_task", ""))
+    if current_task is not None and getattr(current_task[1], "type", None).value == "task":
+        related = set(getattr(current_task[1], "related", ()))
+        for field in ("current_requirement", "current_design"):
+            value = values.get(field, "")
+            if value and value.casefold() not in {"n/a", "none"} and value not in related:
+                _issue(issues, "status_reference_mismatch", status_path, f"{field} {value} is not related to current_task {values['current_task']}")
+
 def run_checks(root: str | Path) -> CheckResult:
     root = Path(root); issues: list[dict[str, str]] = []
+    _check_project_version(root, issues)
     profile = "standard"
     visibility = "public"
     governance_dir = Path("docs")
@@ -321,6 +435,12 @@ def run_checks(root: str | Path) -> CheckResult:
         if governed_project:
             for key in REQUIRED_STATUS_FIELDS:
                 if not re.search(rf"(?im)^\s*{key}\s*:", status_text): _issue(issues, "missing_status_field", status_path.relative_to(root).as_posix(), f"missing status field: {key}")
+            _check_status_references(
+                status_text,
+                {metadata.id: (relative, metadata) for relative, metadata, _body, _text in records},
+                status_path.relative_to(root).as_posix(),
+                issues,
+            )
     if governed_project:
         for view in (required_views[1], required_views[2]):
             view_path = root / view
@@ -382,10 +502,12 @@ def run_checks(root: str | Path) -> CheckResult:
         if git.dirty: _issue(issues, "dirty_worktree", ".git", "Git worktree has uncommitted changes")
         for worktree in git.worktrees:
             if worktree.get("dirty") == "true": _issue(issues, "dirty_worktree", worktree.get("path", ".git"), "linked Git worktree has uncommitted changes")
-        try: branches = subprocess.run(["git", "branch", "--format=%(refname:short)"], cwd=root, check=True, capture_output=True, text=True).stdout.splitlines()
+        try: branches = subprocess.run(["git", "branch", "--no-merged", "HEAD", "--format=%(refname:short)"], cwd=root, check=True, capture_output=True, text=True).stdout.splitlines()
         except (OSError, subprocess.CalledProcessError): branches = []
+        if git.branch not in {"detached", "unborn", "unavailable"}:
+            branches.append(git.branch)
         registered = {value.strip().removeprefix("refs/heads/").casefold() for value in declared_branches}
-        for branch in sorted(branches):
+        for branch in sorted(set(branches)):
             normalized_branch = branch.strip().removeprefix("refs/heads/")
             if (normalized_branch.startswith("task/") or normalized_branch.startswith("bug/")) and normalized_branch.casefold() not in registered:
                 _issue(issues, "unregistered_branch", ".git", f"task/bug branch is not registered: {normalized_branch}")
