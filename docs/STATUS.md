@@ -9,10 +9,10 @@ current_requirement: REQ-002-ZH
 current_design: DES-003-ZH
 current_task: none
 owner: root
-blocker: none
-next_action: create a new task before changing behavior or current-state documentation
+blocker: stale pytest temporary directories in linked strict-agent-guidance worktree
+next_action: create a new task before implementing either accepted roadmap extension
 git_state: git_initialized
-updated: 2026-09-11
+updated: 2026-09-16
 ```
 
 ## Current scope
@@ -20,10 +20,12 @@ updated: 2026-09-11
 The v0.1 requirements and DES-002-ZH technical design baselines remain accepted,
 with the 2026-09-07 governance profile and scope revision recorded by ADR-0002.
 The revision makes single-Agent and sequential handoff the v0.1 collaboration
-core; parallel Agent coordination and external integrations are deferred.
+core.
 Lite/Standard/Strict profile behavior, single/sequential collaboration-mode
 configuration, and team-private/hybrid/public visibility are implemented and
-verified. Parallel Agent coordination and external integrations remain deferred.
+verified. ADR-0004 retains only safe parallel-Agent/worktree coordination and
+task-authorized local automatic commits as planned extensions; external
+integrations are product non-goals.
 Protected Git and remote actions still require explicit user approval.
 
 REQ-002-ZH and DES-003-ZH define the v0.2 existing-project migration MVP.
@@ -36,6 +38,13 @@ control-document boundary, Git diagnostics, and environment preflight work.
 TASK-014 closes current-state documentation drift and adds an automated Kit
 version consistency check so package metadata, configuration, STATUS, and both
 README files cannot silently disagree at handoff.
+
+ADR-0004 narrows the future roadmap to two extensions only: safe parallel-Agent
+and worktree coordination, and task-authorized local automatic commits. Web or
+hosted administration, model calls, complex-format conversion, semantic
+rewriting, Git-history cleanup, remote-permission management, generic external
+platform integration, automatic public-copy export, and automatic remote Git
+actions are product non-goals rather than deferred work.
 
 ## Known constraints
 
@@ -68,5 +77,6 @@ README files cannot silently disagree at handoff.
 
 ## Next action
 
-Create a new task before changing behavior or current-state documentation.
-Protected Git and remote actions continue to require explicit authorization.
+Create a new requirement, design, and task before implementing either accepted
+roadmap extension. Protected Git and remote actions continue to require explicit
+authorization.

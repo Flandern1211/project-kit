@@ -22,13 +22,21 @@ and provides offline validation.
 Governance profiles are `lite`, `standard`, and `strict`; they control the
 depth of documentation and checks. Collaboration mode is independent of the
 profile. v0.1 supports `single-agent` and `sequential-agents`; parallel Agent
-coordination is deferred.
+coordination is not yet implemented. The only planned extensions are safe
+parallel-Agent/worktree coordination and task-authorized local automatic
+commits.
 
 Governance visibility is independent and can be `team-private`, `hybrid`, or
 `public`. Teams should keep complete governance records in a private Git
 repository; public releases should use a reviewed sanitized copy or a separate
 public repository. The Kit does not change GitHub permissions or rewrite
 existing history.
+
+Web or hosted administration, model calls, complex-format conversion,
+semantic rewriting, Git-history cleanup, remote-permission management,
+automatic profile assessment, generic external-platform integration,
+automatic public-copy export, and automatic remote Git actions are product
+non-goals.
 
 GitHub Issues and pull requests remain discussion, review, and merge entry
 points. Repository Markdown is the durable source of truth.

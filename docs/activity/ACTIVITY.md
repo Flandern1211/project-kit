@@ -24,3 +24,8 @@
 2026-09-08 | root | merge | TASK-012 | main@7ebef4c | relative-link repair merged locally; push not authorized
 2026-09-11T11:52:36+08:00 | pgk | create | TASK-014 | N/A | created
 2026-09-11 | root | verify | TASK-014 | task/TASK-014-document-consistency | 161 tests passed; wheel version 0.2.0.dev0; semantic checks passed
+2026-09-16 | root | accept-roadmap-scope | ADR-0004 | codex/task-015-roadmap-scope | only parallel-Agent/worktree safety and authorized local commit remain planned
+2026-09-16 | root | start-document-sync | TASK-015 | codex/task-015-roadmap-scope | reclassifying all other deferred candidates as product non-goals
+2026-09-16 | root | submit-review | TASK-015 | codex/task-015-roadmap-scope | indexes rebuilt; semantic checks found only expected dirty-worktree issues; diff-check passed
+2026-09-16 | user | authorize-commit | TASK-015 | codex/task-015-roadmap-scope | explicit authorization granted for the local task commit
+2026-09-16 | root | verify | TASK-015 | codex/task-015-roadmap-scope | roadmap narrowed to two extensions; indexes and diff-check passed; only pre-existing linked-worktree dirt remains

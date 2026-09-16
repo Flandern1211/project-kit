@@ -66,12 +66,12 @@ PR 已创建：[#1](https://github.com/Flandern1211/project-kit/pull/1)。目标
 
 ## Blockers
 
-无。并行 Agent 协作和自动治理等级评估属于延期范围。
+无。ADR-0004 保留并行 Agent/worktree 安全为后续扩展，并将自动治理等级评估改为非目标。
 
 ## Next action
 
-验证完成；Lite/Standard/Strict 和 single/sequential 配置基础行为已实现。
-自动 profile 评估、parallel-agents 和远程集成仍为延期范围。
+验证完成；Lite/Standard/Strict 和 single/sequential 配置基础行为已实现。未来路线图
+以 ADR-0004 为准：parallel-agents 安全协作保留，自动 profile 评估和远程集成为非目标。
 
 ## Git
 

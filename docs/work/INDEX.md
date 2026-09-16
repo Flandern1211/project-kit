@@ -27,6 +27,7 @@ No records yet.
 - [TASK-011](tasks/TASK-011-implement-v0-2-existing-project-migration.md) — verified
 - [TASK-012](tasks/TASK-012-fix-migration-relative-links.md) — verified
 - [TASK-014](tasks/TASK-014-document-consistency-and-drift-checks.md) — verified
+- [TASK-015](tasks/TASK-015-narrow-future-roadmap.md) — verified
 
 ## Bugs
 

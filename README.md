@@ -18,11 +18,16 @@ Markdown/TOML 文件，并提供离线检查能力。
 - 更新任务的跨会话交接区。
 
 治理 profile 分为 `lite`、`standard`、`strict`，只控制文档和检查深度；协作模式
-独立配置。v0.1 支持 `single-agent` 和 `sequential-agents`，并行 Agent 协作暂缓。
+独立配置。v0.1 支持 `single-agent` 和 `sequential-agents`。后续只规划并行 Agent
+协作安全/worktree 管理和经任务级明确授权的本地自动 commit。
 
 治理记录可见性独立配置为 `team-private`、`hybrid` 或 `public`。团队项目建议使用
 私有 Git 仓库保存完整治理记录；对外发布时使用筛选后的公开副本或独立公开仓库。
 Kit 不修改 GitHub 权限，也不会自动删除或重写已经存在的治理记录。
+
+Web/托管后台、模型调用、复杂格式转换、语义改写、Git 历史清理、远程权限修改、
+自动治理等级评估、通用外部平台集成、公开副本自动导出和自动远程 Git 操作均为
+产品非目标。
 
 GitHub Issue 和 Pull Request 作为讨论、评审和合并入口；仓库 Markdown 是长期记录的权威来源。
 

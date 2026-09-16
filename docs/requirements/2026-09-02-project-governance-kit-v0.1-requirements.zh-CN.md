@@ -3,7 +3,7 @@ id: REQ-001-ZH
 type: requirement
 status: accepted
 created: 2026-09-02
-updated: 2026-09-07
+updated: 2026-09-16
 related:
   - REQ-001
 ---
@@ -57,8 +57,11 @@ v0.1 先支持单 Agent 和不同会话的顺序交接。并行 Agent、worktree
 - Agent 协作模式与治理等级分离，分为 `single-agent`、`sequential-agents` 和
   `parallel-agents`；
 - v0.1 只实现 `single-agent` 和 `sequential-agents`；
-- GitHub/Issue、Web 后台、模型调用、自动 commit/push/PR/release 等均为后续
-  可选扩展；
+- 后续功能扩展只保留并行 Agent 协作安全/worktree 管理，以及经任务级明确授权的
+  本地自动 commit；
+- Web 后台、托管式服务、模型调用、复杂格式转换、语义改写、Git 历史清理、远程
+  权限修改、自动治理等级评估、通用外部平台集成、公开副本自动导出和自动
+  push/PR/merge/tag/release 均为产品非目标，不属于延期路线图；
 - Agent 可以提出治理等级或模块调整，但不能静默修改；治理变更必须有提案、
   影响分析、用户确认和历史保留；
 - 治理记录可见性独立配置为 `team-private`、`hybrid` 或 `public`；团队私有模式
@@ -66,7 +69,8 @@ v0.1 先支持单 Agent 和不同会话的顺序交接。并行 Agent、worktree
 - Kit 不自动修改 GitHub/GitLab 权限，不自动删除、迁移或重写已有记录；公开发布
   前必须使用可审查的筛选副本或独立公开仓库；
 - 本节由 [ADR-0002](../decisions/ADR-0002-governance-profiles-and-v0-1-scope.md)
-  记录，优先于旧版并行协作表述。
+  记录，优先于旧版并行协作表述；未来路线图范围由
+  [ADR-0004](../decisions/ADR-0004-roadmap-scope.md) 收口。
 
 ## 3. 初始化产物
 
@@ -218,7 +222,7 @@ Kit 通过项目内 `AGENTS.md`、模板、状态约束和 `pgk check` 提供规
 - 默认分支命名为 `task/<TASK-ID>-<slug>`，Bug 分支命名为 `bug/<BUG-ID>-<slug>`，
   具体前缀可在项目配置中调整；
 - v0.1 单 Agent 串行开发使用任务分支，不要求额外 worktree；并行 Agent 的独立
-  worktree、文件范围锁定和冲突协调属于后续扩展；
+  worktree、文件范围和冲突预检属于已规划扩展，自动合并不是产品目标；
 - 任务记录必须登记适用的 `branch`、`owner`、`files`；`worktree` 字段为未来并行
   扩展预留；
 - 非实施类记录的 branch/worktree/HEAD 可以填 `N/A` 或继承上游引用，不要求虚构 Git 绑定。
@@ -353,7 +357,7 @@ Kit 应提供可被 Agent 集成执行的授权规则和检查结果：无匹配
 - `pgk init` 默认只创建文件，不执行 `git init`、commit、push、merge 或远程操作；
 - 无 Git 时必须先获得用户确认，Agent 才能执行 `git init`；
 - 任务确认后可以创建本地分支；v0.1 的单 Agent 顺序开发不要求额外 worktree，并行
-  开发和独立 worktree 协调延期；
+  开发安全和独立 worktree 管理是已规划扩展；
 - 治理等级分为 Lite、Standard、Strict；协作模式独立配置，v0.1 只支持 single-agent
   和 sequential-agents；
 - Agent 可以提出治理变更提案，但必须经用户确认后才能修改治理配置；

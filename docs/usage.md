@@ -20,8 +20,10 @@ project itself, or mutate remote platforms.
 | `pgk handoff` | 更新 TASK/BUG 的受控 handoff 区块和活动记录 | 只写标记区；不改变 frontmatter 状态 | branch、HEAD、dirty、未提交内容、阻塞和唯一下一步 |
 | `pgk migrate` | 包含 `plan`、`approve`、`apply`：扫描、审查并执行文档迁移 | 原文件不移动、不删除；只应用明确批准的条目 | 来源、目标、哈希、敏感性、置信度、链接、冲突和 VER 证据 |
 
-当前不实现：parallel Agent 调度、自动 Git commit/push/merge、Issue/PR 或远程仓库操作、
-Web 管理后台、模型调用、公开副本导出、历史清理以及 Markdown/UTF-8 纯文本之外的自动转换。
+后续只规划两项扩展：并行 Agent 协作安全/worktree 管理，以及经任务级明确授权的本地
+自动 commit。Web/托管后台、模型调用、复杂格式转换、语义改写、Git 历史清理、远程
+权限修改、自动治理等级评估、通用外部平台集成、公开副本自动导出，以及自动
+push/PR/merge/tag/release 均为产品非目标，不属于延期路线图。
 
 ## 1. 安装 / Install
 

@@ -26,6 +26,7 @@ second copy of the documents it links to. Read [STATUS](STATUS.md), then
 - [ADR-0001: repository Markdown is the durable task record](decisions/ADR-0001-repository-markdown-task-record.md)
 - [ADR-0002: governance profiles and v0.1 scope revision](decisions/ADR-0002-governance-profiles-and-v0-1-scope.md)
 - [ADR-0003: governance record visibility](decisions/ADR-0003-governance-record-visibility.md)
+- [ADR-0004: 后续功能范围收口](decisions/ADR-0004-roadmap-scope.md)
 
 ## Work and verification
 
@@ -41,6 +42,7 @@ second copy of the documents it links to. Read [STATUS](STATUS.md), then
 - [TASK-011: v0.2 existing-project migration](work/tasks/TASK-011-implement-v0-2-existing-project-migration.md)
 - [TASK-012: fix migration relative links](work/tasks/TASK-012-fix-migration-relative-links.md)
 - [TASK-014: document consistency and drift checks](work/tasks/TASK-014-document-consistency-and-drift-checks.md)
+- [TASK-015: narrow future roadmap](work/tasks/TASK-015-narrow-future-roadmap.md)
 - [VER-002: v0.2 migration MVP verification](verification/VER-002-v0-2-migration-mvp.md)
 - [VER-003: migration relative-link verification](verification/VER-003-migration-relative-links.md)
 - [v0.2 migration implementation plan](superpowers/plans/2026-09-07-project-governance-kit-v0.2-migration-implementation.md)

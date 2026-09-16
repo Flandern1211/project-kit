@@ -3,7 +3,7 @@ id: DES-002-ZH
 type: design
 status: accepted
 created: 2026-09-04
-updated: 2026-09-07
+updated: 2026-09-16
 related:
   - REQ-001-ZH
   - REQ-001
@@ -26,13 +26,15 @@ v0.1 使用 Python 3.11+ 标准库。核心 CLI 只负责本地文件和只读 G
 - 治理等级为 Lite、Standard、Strict，只控制文档和检查深度；
 - 协作模式独立于治理等级，分为 `single-agent`、`sequential-agents` 和
   `parallel-agents`；
-- v0.1 只实现单 Agent 和跨会话顺序交接；并行 Agent、worktree 协调、文件范围
-  锁定和自动合并延期；
+- v0.1 只实现单 Agent 和跨会话顺序交接；后续只规划并行 Agent 协作安全、
+  worktree 生命周期、文件范围和冲突预检，不规划自动合并；
 - Agent 可以生成治理变更提案，但治理配置只有在用户确认后才能修改；
-- GitHub/Issue、Web、模型调用和自动公开操作是后续可选扩展。
+- 另一个后续扩展是经任务级明确授权的本地自动 commit；Web、模型调用、通用外部
+  平台集成和自动公开操作均为产品非目标。
 
 本节由 [ADR-0002](../decisions/ADR-0002-governance-profiles-and-v0-1-scope.md)
-记录，优先于旧版并行协作表述。
+记录，优先于旧版并行协作表述；未来路线图由
+[ADR-0004](../decisions/ADR-0004-roadmap-scope.md) 收口。
 
 ### 1.2 治理记录可见性（2026-09-07）
 
@@ -149,7 +151,7 @@ Kit 通过生成的 `AGENTS.md`、模板和 `pgk check` 提供规则与违规报
 
 单 Agent 使用 `task/<TASK-ID>-<slug>` 或 `bug/<BUG-ID>-<slug>` 分支；v0.1 不要求额外
 worktree。并行 Agent 使用 `.worktrees/<TASK-ID>` 或 `.worktrees/<BUG-ID>`、文件范围
-冲突检查和自动协调均为后续扩展。任务记录仍可预留 `branch`、`worktree`、`owner`、
+和冲突预检属于已规划扩展；自动协调和自动合并不是产品目标。任务记录仍可预留 `branch`、`worktree`、`owner`、
 `files`、`base_commit` 和 `head_commit` 字段。
 
 以下动作默认逐次需要用户明确确认：commit、push、Issue 创建/更新/关闭/回复、PR/MR
@@ -186,8 +188,9 @@ Kit 生成的视图使用 `<!-- PGK_GENERATED: ... -->` 标记；只有带标记
 ### 8.1 v0.1 实现边界
 
 v0.1 的核心是初始化、文档链、状态/索引、任务和验证记录、跨会话交接以及用户授权
-边界。多 Agent 并行调度、远程平台、Web 管理后台、模型调用和自动公开操作不属于
-本版实现目标；治理等级的完整自动评估也延后，Agent 只需能够读取配置并提出变更提案。
+边界。后续只规划并行 Agent 协作安全/worktree 管理和受授权本地自动 commit。
+远程平台自动化、Web 管理后台、模型调用、复杂格式转换、语义改写、历史清理、自动
+治理等级评估和自动公开操作是产品非目标；Agent 仍只需读取治理等级配置并提出变更提案。
 
 ## 9. 需求覆盖
 
