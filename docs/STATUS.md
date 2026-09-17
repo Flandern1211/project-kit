@@ -9,8 +9,8 @@ current_requirement: REQ-002-ZH
 current_design: DES-003-ZH
 current_task: none
 owner: root
-blocker: stale pytest temporary directories remain in the linked strict-agent-guidance worktree
-next_action: create a new requirement and design before starting either roadmap extension
+blocker: none
+next_action: create TASK-018 before publishing the Skill to Flandern1211/skills
 git_state: git_initialized
 updated: 2026-09-17
 ```
@@ -52,6 +52,12 @@ project evaluations; VER-004 records the accepted 100% versus 80% comparison.
 The Skill is also installed in the current user's Codex skills directory. It adds
 no remote integration or new CLI subsystem.
 
+TASK-017 makes the Skill's trigger, input, workflow, output, and acceptance
+contracts explicit at runtime without changing its verified project flows.
+The runtime instructions, concise discovery description, and Codex UI prompt
+are localized for Chinese. VER-005 confirms the repository and installed copies
+are identical and valid.
+
 ## Known constraints
 
 - v0.1 uses Python 3.11+ and the standard library at runtime;
@@ -83,9 +89,11 @@ no remote integration or new CLI subsystem.
 - TASK-016: Codex Skill quick validation passed; with-skill behavior scored
   15/15 versus baseline 12/15; Python 3.14 full regression passed 164 tests;
   see [VER-004](verification/VER-004-agent-first-project-entry.md).
+- TASK-017: the five-element runtime contract and installed copy passed Codex
+  Skill validation; checker regression passed 31 tests; see
+  [VER-005](verification/VER-005-skill-five-element-contract.md).
 
 ## Next action
 
-Create a new requirement, design, and task before implementing either accepted
-roadmap extension. Protected Git and remote actions continue to require explicit
-authorization.
+Create TASK-018 before publishing the Skill to Flandern1211/skills. Protected
+Git and remote actions continue to require explicit authorization.

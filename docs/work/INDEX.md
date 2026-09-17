@@ -29,6 +29,7 @@ No records yet.
 - [TASK-014](tasks/TASK-014-document-consistency-and-drift-checks.md) — verified
 - [TASK-015](tasks/TASK-015-narrow-future-roadmap.md) — verified
 - [TASK-016](tasks/TASK-016-agent-first-project-entry.md) — verified
+- [TASK-017](tasks/TASK-017-explicit-skill-five-element-contract.md) — verified
 
 ## Bugs
 

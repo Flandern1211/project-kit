@@ -1,4 +1,4 @@
 interface:
   display_name: "Project Governance Kit"
-  short_description: "Start and govern projects through conversation"
-  default_prompt: "Use $project-governance-kit to start or resume this project safely through conversation."
+  short_description: "通过对话安全创建、接入和恢复 PGK 项目"
+  default_prompt: "使用 $project-governance-kit，通过对话安全创建、接入或恢复这个项目。"

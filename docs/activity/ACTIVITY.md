@@ -38,3 +38,11 @@
 2026-09-17 | user | authorize-install-and-commit | TASK-016 | codex/task-016-agent-first-entry | user authorized user-level Skill installation and the local task commit
 2026-09-17 | root | install-skill | TASK-016 | %USERPROFILE%/.codex/skills/project-governance-kit | installed copy passed Codex quick validation
 2026-09-17 | root | verify | TASK-016 | codex/task-016-agent-first-entry | task verified and prepared for final local commit
+2026-09-17 | user | request-five-element-contract | TASK-017 | codex/task-017-skill-five-elements | requested explicit trigger, input, workflow, output, and acceptance sections
+2026-09-17 | root | start | TASK-017 | codex/task-017-skill-five-elements | restructuring runtime Skill contract without changing verified behavior
+2026-09-17 | root | sync-installed-skill | TASK-017 | %USERPROFILE%/.codex/skills/project-governance-kit | repository and installed copies match and pass quick validation
+2026-09-17 | root | submit-review | VER-005 | codex/task-017-skill-five-elements | five-element contract verified; checker regression 31 passed
+2026-09-17 | root | localize-skill | TASK-017 | codex/task-017-skill-five-elements | Chinese runtime instructions and UI prompt synchronized to installed Skill
+2026-09-17 | root | restore-description | TASK-017 | codex/task-017-skill-five-elements | restored the user-approved concise 82-character trigger description
+2026-09-17 | user | authorize-publish | TASK-017 | codex/task-017-skill-five-elements | user requested publishing the finalized Skill to Flandern1211/skills
+2026-09-17 | root | verify | TASK-017 | codex/task-017-skill-five-elements | Chinese five-element Skill and installed copy validated and ready for commit

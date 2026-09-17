@@ -1,104 +1,144 @@
 ---
 name: project-governance-kit
-description: Use Project Governance Kit through natural-language conversation. Use this skill whenever the user wants to create, start, bootstrap, govern, adopt, or resume a software project with PGK; wants the Agent to handle pgk initialization; or wants to bring an existing repository under Project Governance Kit. Classify the project safely, run the local pgk CLI, create only draft requirements before user acceptance, and preserve all Git and migration authorization gates. Do not trigger merely to explain PGK, compare tools, or make an ordinary code change in a project that has not asked for PGK governance.
+description: "通过自然语言让 Agent 使用 PGK 创建新项目、接入已有项目或恢复已治理项目，并遵守需求确认、迁移和 Git 授权边界。仅在用户明确要求 PGK 治理时使用。"
 ---
 
-# Project Governance Kit Agent Entry
+# Project Governance Kit Agent 入口
 
-Act as the conversational interface to Project Governance Kit. The user should be able to describe
-the project and make decisions while you handle deterministic `pgk` commands and repository records.
-The user's instructions take precedence over this skill; target-repository `AGENTS.md` instructions
-govern all work inside that repository.
+作为 Project Governance Kit 的对话式入口。用户只需要描述项目并做决策，由你负责执行
+确定性的 `pgk` 命令和维护仓库治理记录。用户指令优先于本技能；目标仓库的
+`AGENTS.md` 约束在该仓库内的全部工作。
 
-This workflow requires a local `pgk` command or an accessible `project_governance` Python module.
+本流程要求本地存在 `pgk` 命令，或能够访问 `project_governance` Python 模块。
 
-## Start safely
+## 触发场景
 
-1. Resolve the exact target root. Do not initialize an ambiguous directory.
-2. Inspect the directory without changing it. Check for `.project-governance.toml`, `AGENTS.md`,
-   Git metadata, code, and existing documents.
-3. Confirm that `pgk` is available with `pgk --help`. If only repository source is available, use
-   the equivalent `python -m project_governance --help`. If neither works, report the installation
-   blocker and a local installation command; do not claim initialization succeeded.
-4. Classify the target as `governed`, `existing`, `new`, or `unclear` using the rules below.
+在以下情况下使用本技能：
 
-## Classify the project
+- 使用 PGK 创建、启动或初始化一个新项目；
+- 让 Agent 负责 PGK 初始化并主持需求讨论；
+- 安全检查已有仓库，并将其接入 PGK；
+- 恢复或继续一个已经由 PGK 治理的项目。
 
-### Governed
+仅解释 PGK、比较治理工具、阅读文档，或在没有要求 PGK 治理的项目中执行普通代码修改时，
+不要使用本技能。
 
-Treat a project as governed when it has `.project-governance.toml` and the expected governance
-entry documents. Do not run `pgk init` again. Read, in order:
+## 输入
 
-1. `AGENTS.md`;
-2. `docs/INDEX.md` or the configured governance index;
-3. `docs/project-structure.md`;
-4. `docs/STATUS.md`;
-5. records linked to the current task or the user's requested change.
+执行任何写入前必须明确：
 
-Resume the active task when one exists. For new requested behavior, follow the repository's
-requirement/design/task chain instead of inventing a shortcut.
+- 准确的目标项目根目录；
+- 用户意图：创建新项目、接入已有项目，或恢复已治理项目。
 
-### Existing
+如果用户或仓库已经提供，则使用：
 
-Treat a directory as an existing project when it contains code, project documents, or meaningful Git
-history but no PGK configuration. Run only read-only discovery first:
+- 新项目名称；
+- 治理 profile、协作模式和 visibility；
+- 恢复工作时已有的 requirement、task 或 bug 标识。
+
+能够从用户请求或仓库中明确推断的信息不要重复询问。可选初始化参数未指定时使用 Kit
+默认值。只有在无法安全确定根目录或操作类型时，才询问一个简短的澄清问题。
+
+## 流程
+
+### 安全开始
+
+1. 解析准确的目标根目录。不要初始化含义不明确的目录。
+2. 在不修改内容的情况下检查目标目录，查看 `.project-governance.toml`、`AGENTS.md`、
+   Git 元数据、代码和已有文档。
+3. 使用 `pgk --help` 确认 `pgk` 可用。如果只有仓库源码，使用等价的
+   `python -m project_governance --help`。两者都不可用时，报告安装阻塞和本地安装命令，
+   不要声称初始化成功。
+4. 按以下规则把目标分类为 `governed`、`existing`、`new` 或 `unclear`。
+
+### 判断项目类型
+
+#### 已治理项目（governed）
+
+当项目包含 `.project-governance.toml` 和预期的治理入口文档时，视为已治理项目。不要再次
+运行 `pgk init`。按顺序读取：
+
+1. `AGENTS.md`；
+2. `docs/INDEX.md` 或配置指定的治理索引；
+3. `docs/project-structure.md`；
+4. `docs/STATUS.md`；
+5. 当前任务或用户请求变更关联的记录。
+
+存在活动任务时先恢复该任务。用户请求新行为时，遵循仓库已有的需求、设计和任务链，
+不要自行绕过治理流程。
+
+#### 已有项目（existing）
+
+当目录包含代码、项目文档或有意义的 Git 历史，但没有 PGK 配置时，视为尚未治理的已有
+项目。首先只运行只读检查：
 
 ```text
 pgk adopt --root <root> --json
 pgk doctor --root <root> --json
 ```
 
-Summarize existing governance files, missing files, candidate mappings, sensitive findings, Git state,
-and the recommended choice between supplement and migration. Stop for the user's confirmation. Do not
-run `init --mode supplement`, `migrate approve`, or `migrate apply` merely because the user asked for
-an assessment or said they eventually want PGK.
+汇总已有治理文件、缺失文件、候选映射、敏感内容发现、Git 状态，以及 supplement 和
+migration 之间的建议选择，然后停下等待用户确认。不要仅因为用户要求评估或表示以后想用
+PGK，就运行 `init --mode supplement`、`migrate approve` 或 `migrate apply`。
 
-### New
+#### 新项目（new）
 
-Treat an empty directory, or a directory explicitly designated for a new project without existing
-business content, as new. Ask only for information that materially affects initialization: the target
-root, project name, and governance visibility when it is not already clear. Use Kit defaults for
-profile and collaboration mode unless the user requests otherwise.
+空目录，或用户明确指定用于新项目且没有既有业务内容的目录，视为新项目。只询问真正影响
+初始化的信息：目标根目录、项目名称，以及尚未明确时的治理 visibility。除非用户另有要求，
+profile 和协作模式使用 Kit 默认值。
 
-Preview before writing:
+写入前先预览：
 
 ```text
 pgk init --root <root> --project-name <name> --dry-run --json
 ```
 
-When the user explicitly asked to create or start this new project with PGK, that request authorizes
-creation of the missing governance files in the named root. It does not authorize Git initialization,
-commit, push, PR, merge, tag, release, deletion, or remote permission changes.
+用户明确要求用 PGK 创建或启动该新项目时，该请求授权在指定根目录创建缺失的治理文件。
+它不授权 Git 初始化、commit、push、PR、merge、tag、release、删除或修改远程权限。
 
-Run initialization, then read the generated Agent contract and governance entry documents. Run
-`pgk check --root <root> --json`. Create the next available requirement record with `status=draft`,
-using the user's stated project goal as its title and content. Capture goals, scope, non-scope,
-assumptions, open questions, and acceptance criteria without pretending uncertain details are facts.
+执行初始化后，读取生成的 Agent 契约和治理入口文档，并运行
+`pgk check --root <root> --json`。使用用户已经表达的项目目标作为标题和内容，创建下一个
+可用编号、`status=draft` 的需求记录。记录目标、范围、非范围、假设、待确认问题和验收标准，
+不要把不确定的信息写成事实。
 
-Stop after presenting the draft requirement and ask the user to confirm or revise it. Do not create a
-design, implementation task, or business code until the requirement is accepted.
+展示 draft 需求后停下，请用户确认或修改。需求被接受前，不要创建设计、实施任务或业务代码。
 
-### Unclear
+#### 不明确（unclear）
 
-If the root, existing-project status, or intended write location is genuinely ambiguous, ask one short
-question that resolves the ambiguity. Continue read-only inspection while waiting when useful.
+如果根目录、项目类型或写入位置确实存在歧义，只问一个能够消除歧义的简短问题。等待期间
+可以继续进行有帮助的只读检查。
 
-## Authorization boundaries
+## 授权边界
 
-- Existing-project supplement and migration writes require confirmation after the read-only proposal.
-- Migration apply handles only explicitly approved items and follows the target repository's records.
-- `git init`, commit, push, PR, merge, tag, release, deletion, and remote changes retain their own
-  authorization requirements. Never treat authorization for one action as authorization for another.
-- Never overwrite existing project documents. Use PGK preview, conflict reporting, and proposal flows.
+- 已有项目的 supplement 和迁移写入，需要在展示只读方案后再次确认。
+- 迁移 apply 只处理明确批准的条目，并遵循目标仓库的记录规则。
+- `git init`、commit、push、PR、merge、tag、release、删除和远程变更各自保留独立授权
+  要求。不要把一个动作的授权扩展到另一个动作。
+- 永远不要覆盖已有项目文档。使用 PGK 的预览、冲突报告和方案流程。
 
-## Report back
+## 输出
 
-Keep the response compact and state:
+保持回复简洁，并说明：
 
-- classification: new, existing, governed, or unclear;
-- read-only checks and local writes performed;
-- current governance stage and any blocker;
-- the single next user decision or next action.
+- 分类结果：`new`、`existing`、`governed` 或 `unclear`；
+- 已执行的只读检查和本地写入；
+- 当前治理阶段和任何 blocker；
+- 唯一的下一个用户决策或下一步动作。
 
-The normal pause for a new project is requirement confirmation. The normal pause for an existing
-project is adoption-plan confirmation.
+新项目的正常暂停点是需求确认。已有项目的正常暂停点是接入方案确认。
+
+## 验收标准
+
+报告完成前，验证所有适用条件：
+
+- 目标已被分类为 `new`、`existing`、`governed` 或 `unclear`；
+- 只执行了该分类允许的动作；
+- 没有覆盖已有项目文档；
+- 没有在缺少匹配授权时执行受保护 Git、迁移、删除或远程动作；
+- 新项目已经完成治理初始化，只创建了一个 draft 需求，并且在需求接受前没有创建设计、
+  实施任务或业务代码；
+- 已有项目只完成了只读接入检查，并在 supplement 或迁移写入前停在接入方案确认；
+- 已治理项目恢复了已有记录上下文，没有重复初始化或创建重复记录；
+- 最终回复包含分类、动作、当前阶段、blocker，以及唯一的下一项用户决策或动作。
+
+如果无法验证任一适用条件，报告 blocker，不要声称工作已经完成。
