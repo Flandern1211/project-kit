@@ -29,3 +29,12 @@
 2026-09-16 | root | submit-review | TASK-015 | codex/task-015-roadmap-scope | indexes rebuilt; semantic checks found only expected dirty-worktree issues; diff-check passed
 2026-09-16 | user | authorize-commit | TASK-015 | codex/task-015-roadmap-scope | explicit authorization granted for the local task commit
 2026-09-16 | root | verify | TASK-015 | codex/task-015-roadmap-scope | roadmap narrowed to two extensions; indexes and diff-check passed; only pre-existing linked-worktree dirt remains
+2026-09-16 | user | accept-direction | REQ-003-ZH | codex/task-016-agent-first-entry | user approved Agent-first conversational operation of PGK
+2026-09-16 | root | start | TASK-016 | codex/task-016-agent-first-entry | drafting Codex Skill and new/existing/governed project evaluations
+2026-09-16 | user | approve-evals | TASK-016 | codex/task-016-agent-first-entry | approved three iteration-1 evaluation prompts
+2026-09-16 | root | benchmark | TASK-016 | codex/task-016-agent-first-entry | with-skill 15/15; baseline 12/15; static review page generated
+2026-09-17 | user | accept-evaluation | TASK-016 | codex/task-016-agent-first-entry | user approved iteration-1 behavior and requested continuation
+2026-09-17 | root | submit-review | VER-004 | codex/task-016-agent-first-entry | Skill valid; 164 tests passed; documentation synchronized
+2026-09-17 | user | authorize-install-and-commit | TASK-016 | codex/task-016-agent-first-entry | user authorized user-level Skill installation and the local task commit
+2026-09-17 | root | install-skill | TASK-016 | %USERPROFILE%/.codex/skills/project-governance-kit | installed copy passed Codex quick validation
+2026-09-17 | root | verify | TASK-016 | codex/task-016-agent-first-entry | task verified and prepared for final local commit

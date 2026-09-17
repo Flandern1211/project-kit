@@ -10,9 +10,12 @@
 | DES-001 | design | draft | N/A | REQ-001 | N/A / N/A | N/A | N/A | N/A |
 | DES-002-ZH | design | accepted | N/A | REQ-001-ZH, REQ-001 | N/A / N/A | N/A | N/A | N/A |
 | DES-003-ZH | design | accepted | N/A | REQ-002-ZH, REQ-001-ZH | N/A / N/A | N/A | N/A | N/A |
+| DES-004-ZH | design | accepted | N/A | REQ-003-ZH, ADR-0004 | N/A / N/A | N/A | N/A | N/A |
 | REQ-001 | requirement | accepted | N/A | REQ-001-ZH | N/A / N/A | N/A | N/A | N/A |
 | REQ-001-ZH | requirement | accepted | N/A | REQ-001 | N/A / N/A | N/A | N/A | N/A |
 | REQ-002-ZH | requirement | accepted | N/A | REQ-001-ZH, DES-003-ZH | N/A / N/A | N/A | N/A | N/A |
+| REQ-003-ZH | requirement | accepted | N/A | ADR-0004 | N/A / N/A | N/A | N/A | N/A |
+| REVIEW-001 | review | verified | root；行为输出由用户审核。 | TASK-016, REQ-003-ZH, DES-004-ZH, VER-004 | N/A / N/A | iteration-1：with-skill 15/15，without-skill 12/15； | 无实现 blocker。commit 和用户级安装尚未授权。 | 用户决定是否授权本地 commit，以及是否将 Skill 安装到当前 Codex 用户目录。 |
 | TASK-000 | task | verified | root | REQ-001, DES-001 | codex/bootstrap-v0.1 / dirty | 20 tests passed; pgk check ok; document validator 0 errors | none | review and approve the first TouzhiAgent external trial |
 | TASK-001 | task | verified | root | N/A | codex/bootstrap-v0.1 / dirty | 20 tests passed; pgk check ok; document validator 0 errors | none | review the usage guide and begin the TouzhiAgent trial |
 | TASK-002 | task | verified | root | N/A | codex/bootstrap-v0.1 / dirty | pgk check ok; document validator 0 errors | none | review the Chinese requirements document |
@@ -28,7 +31,9 @@
 | TASK-012 | task | verified | root | REQ-002-ZH, DES-003-ZH, TASK-011 | task/TASK-012-migration-relative-links / D:/Project/project-kit/.worktrees/touzhi-link-fix | 120 项主项目测试和链接专项测试通过；真实 TouzhiAgent clone 迁移后 `pgk check` 不再报告原有相对链接断链。 | 无。当前只在独立 worktree 工作，不修改 TouzhiAgent。 | TASK-012 已合并到本地 `main` 的 8098a4c；push 仍需用户单独授权。 |
 | TASK-014 | task | verified | root | REQ-001-ZH, DES-002-ZH, REQ-002-ZH, DES-003-ZH | task/TASK-014-document-consistency / D:/Project/project-kit/.worktrees/document-consistency | 已完成当前工作树验证：`py -3 -m pytest -o addopts="" --basetemp .pytest-tmp-task014-final6 -q`： | 无。 | 后续行为或当前状态文档变更须创建新的 TASK。 |
 | TASK-015 | task | verified | root | ADR-0004, REQ-001-ZH, DES-002-ZH | codex/task-015-roadmap-scope / D:/Project/project-kit | `pgk index --root . --json`：成功重建决策、任务、工作板和其他生成索引； | 无。项目级 `pgk check` 仍会独立报告既有 `strict-agent-guidance` worktree 中的 pytest | 任务已验证；后续实现两个扩展中的任一项时创建新的需求、设计和任务。 |
+| TASK-016 | task | verified | root | REQ-003-ZH, DES-004-ZH, ADR-0004 | codex/task-016-agent-first-entry / D:/Project/project-kit | 用户已确认 `evals/evals.json` 中的三类测试提示； | 无。既有 `strict-agent-guidance` linked worktree 中的 pytest 临时目录不属于本任务； | 任务已完成并提交；后续只规划的两个扩展需分别建立新的需求、设计和任务。 |
 | VER-000 | verification | verified | root | TASK-000 | N/A / N/A | `py -3 -m pytest -o addopts='' -q` — 20 passed; | none | Use VER-001 for the current v0.1 baseline acceptance. |
 | VER-001 | verification | verified | root | TASK-005, REQ-001-ZH, DES-002-ZH | N/A / N/A | `py -3 -m pytest -o addopts='' --basetemp D:\pgk-final-suite13 -ra` — full | The shared checkout is intentionally dirty until a user-authorized commit; | Review this baseline and decide whether to authorize a commit; remote |
 | VER-002 | verification | verified | root | REQ-002-ZH, DES-003-ZH, TASK-011 | N/A / N/A | ```text | 无代码阻塞。验证记录中的 worktree 状态是当时的历史快照，当前状态以 `docs/STATUS.md` 和最新 Git 检查为准。 | 后续迁移变更使用新的 TASK，并重新生成迁移和验证证据。 |
 | VER-003 | verification | verified | root | TASK-012, REQ-002-ZH, DES-003-ZH | N/A / N/A | 新增相对链接单元测试：已迁移目标、保留源文件目标和外部 URL； | 不存在的源链接仍保留并需要人工处理；Kit 不会猜测不存在的目标。 | TASK-012 已合并到本地 `main` 的 8098a4c；push 仍需用户单独授权。 |
+| VER-004 | verification | verified | root | TASK-016, REQ-003-ZH, DES-004-ZH | N/A / N/A | 用户审核并批准三条 iteration-1 评测提示和静态评测结果； | Skill 尚未安装到用户全局 Codex Skill 目录；安装和仓库 commit 都需要单独明确授权。 | 审阅 TASK-016 变更，并决定是否授权本地 commit；如需立即使用，再单独授权安装 Skill。 |

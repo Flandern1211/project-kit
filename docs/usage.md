@@ -46,6 +46,52 @@ pgk --help
 python -m project_governance --help
 ```
 
+### 1.1 推荐的 Agent-first 使用方式 / Recommended Agent-first workflow
+
+仓库提供 `skills/project-governance-kit/`。将该目录复制到 Codex 用户 Skill 目录
+（默认 `%USERPROFILE%\.codex\skills\project-governance-kit`；自定义 `CODEX_HOME`
+时使用其 `skills` 子目录）后，通常不需要再手工输入 PGK 命令。
+
+The repository includes `skills/project-governance-kit/`. Copy it to the Codex
+user skills directory (normally
+`%USERPROFILE%\.codex\skills\project-governance-kit`, or the `skills` directory
+under a custom `CODEX_HOME`). After that, normal use is conversational.
+
+在本仓库根目录可以显式执行一次：
+
+```powershell
+$pgkCodexRoot = if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $env:USERPROFILE '.codex' }
+$pgkSkillTarget = Join-Path $pgkCodexRoot 'skills\project-governance-kit'
+New-Item -ItemType Directory -Force -Path $pgkSkillTarget | Out-Null
+Copy-Item -Recurse -Force .\skills\project-governance-kit\* $pgkSkillTarget
+```
+
+这是用户级配置写入，应由用户明确执行或授权 Agent 执行。更新 Skill 时重新复制该目录。
+
+新项目示例：
+
+```text
+在 D:\Projects\PocketLedger 用 PGK 创建一个项目。先初始化并和我确认需求，不要开始写业务代码。
+```
+
+已有项目示例：
+
+```text
+把 D:\Projects\legacy-orders 接入 PGK。先只读检查并展示方案，不要修改现有文件。
+```
+
+已治理项目示例：
+
+```text
+继续这个 PGK 项目的当前任务，先读取 STATUS 和关联记录恢复上下文。
+```
+
+Agent 会负责命令编排和治理记录，用户负责目标、需求确认和受保护动作授权。新项目正常
+停在需求确认；已有项目正常停在接入方案确认。CLI 仍是确定性执行层和手工备用入口。
+
+Skill 安装是一次性的本地配置动作，不由 `pgk init` 静默执行。核心 Kit 仍不调用模型
+提供商或远程服务。
+
 ## 2. 新项目 / New project
 
 进入目标项目根目录，创建缺失的治理文件：

@@ -79,6 +79,7 @@ business directories require an accepted design and task before use.
 - `docs/templates/`: supported record templates only.
 - `docs/INDEX.md`, `docs/project-structure.md`, `docs/WORKFLOW.md`, `docs/project-conventions.md`, and `docs/STATUS.md`: navigation, structure, workflow, conventions, and current state.
 - `docs/work/INDEX.md` and `docs/work/BOARD.md`: generated task and bug views.
+- `skills/<name>/SKILL.md`: repository-distributed Agent skills; Skill metadata is not lifecycle frontmatter and does not add a RecordType.
 
 See `docs/project-structure.md` for the detailed map, including root files,
 `.agent/`, and optional plan directories. Plans, specs, handoffs, indexes,

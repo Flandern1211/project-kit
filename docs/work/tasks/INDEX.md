@@ -18,3 +18,4 @@ The index is generated from records.
 - [TASK-012](TASK-012-fix-migration-relative-links.md) — verified
 - [TASK-014](TASK-014-document-consistency-and-drift-checks.md) — verified
 - [TASK-015](TASK-015-narrow-future-roadmap.md) — verified
+- [TASK-016](TASK-016-agent-first-project-entry.md) — verified

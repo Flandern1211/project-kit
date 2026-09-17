@@ -58,6 +58,51 @@ def test_checks_ignore_local_agent_projection_documents(tmp_path: Path):
     assert not any(issue["path"].startswith(".agent/") for issue in result.issues)
 
 
+def test_checks_validate_skill_frontmatter_without_treating_it_as_a_record(tmp_path: Path):
+    init_project(tmp_path)
+    skill = tmp_path / "skills/project-governance-kit/SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text(
+        "---\n"
+        "name: project-governance-kit\n"
+        "description: Use PGK through an Agent.\n"
+        "---\n\n"
+        "# Skill\n",
+        encoding="utf-8",
+    )
+
+    result = run_checks(tmp_path)
+
+    assert "skills/project-governance-kit/SKILL.md" in result.checked_files
+    assert not any(issue["code"] in {"invalid_frontmatter", "invalid_skill_frontmatter"} for issue in result.issues)
+
+
+def test_checks_report_invalid_skill_frontmatter(tmp_path: Path):
+    init_project(tmp_path)
+    skill = tmp_path / "skills/project-governance-kit/SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("---\nname: wrong-name\n---\n\n# Skill\n", encoding="utf-8")
+
+    result = run_checks(tmp_path)
+
+    issues = [issue for issue in result.issues if issue["path"] == "skills/project-governance-kit/SKILL.md"]
+    assert [issue["code"] for issue in issues] == ["invalid_skill_frontmatter", "invalid_skill_frontmatter"]
+    assert any("description" in issue["message"] for issue in issues)
+    assert any("does not match directory" in issue["message"] for issue in issues)
+
+
+def test_checks_ignore_generated_skill_evaluation_workspaces(tmp_path: Path):
+    init_project(tmp_path)
+    generated = tmp_path / "skills/project-governance-kit-workspace/iteration-1/fixture.md"
+    generated.parent.mkdir(parents=True)
+    generated.write_text("---\ninvalid: lifecycle\n---\n[broken](missing.md)\n", encoding="utf-8")
+
+    result = run_checks(tmp_path)
+
+    assert "skills/project-governance-kit-workspace/iteration-1/fixture.md" not in result.checked_files
+    assert not any(issue["path"].startswith("skills/project-governance-kit-workspace/") for issue in result.issues)
+
+
 def test_checks_do_not_skip_views_when_governance_marker_lacks_stage(tmp_path: Path):
     init_project(tmp_path)
     status = tmp_path / "docs/STATUS.md"

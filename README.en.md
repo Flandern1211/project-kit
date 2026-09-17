@@ -53,7 +53,23 @@ python -m project_governance --help
 
 ## Usage
 
-From a new project root, initialize the governance files and validate them:
+The recommended path is to install the repository Agent Skill once, then talk
+only to Codex and let the Agent operate `pgk`. The Skill source is under
+`skills/project-governance-kit/`. After installing it into the Codex user
+skills directory, a typical request is:
+
+```text
+Create a new project at D:\Projects\PocketLedger with PGK. Initialize governance and discuss the requirements with me before writing business code.
+```
+
+The Agent classifies the target as new, existing, or already governed. New
+projects pause after a draft requirement; existing projects run read-only
+`adopt` and `doctor` before proposing changes; governed projects resume from
+STATUS and linked records. The Skill does not authorize `git init`, commit,
+push, merge, or migration apply.
+
+The CLI remains available as a manual fallback. From a new project root,
+initialize the governance files and validate them:
 
 ```powershell
 pgk init --root . --project-name MyProject
@@ -100,6 +116,12 @@ pgk check --root . --json
 `review`, `verification`, and `migration`. Write commands support `--dry-run`, and agent callers can use
 `--json`. See the [usage guide](docs/usage.md) for complete arguments,
 statuses, and collaboration flow.
+
+Agent-first records:
+
+- [REQ-003-ZH](docs/requirements/2026-09-16-agent-first-project-entry-requirements.zh-CN.md)
+- [DES-004-ZH](docs/design/2026-09-16-agent-first-project-entry-design.zh-CN.md)
+- [VER-004](docs/verification/VER-004-agent-first-project-entry.md)
 
 Common commands:
 

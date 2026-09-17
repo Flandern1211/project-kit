@@ -9,10 +9,10 @@ current_requirement: REQ-002-ZH
 current_design: DES-003-ZH
 current_task: none
 owner: root
-blocker: stale pytest temporary directories in linked strict-agent-guidance worktree
-next_action: create a new task before implementing either accepted roadmap extension
+blocker: stale pytest temporary directories remain in the linked strict-agent-guidance worktree
+next_action: create a new requirement and design before starting either roadmap extension
 git_state: git_initialized
-updated: 2026-09-16
+updated: 2026-09-17
 ```
 
 ## Current scope
@@ -46,6 +46,12 @@ rewriting, Git-history cleanup, remote-permission management, generic external
 platform integration, automatic public-copy export, and automatic remote Git
 actions are product non-goals rather than deferred work.
 
+REQ-003-ZH and DES-004-ZH add an Agent-first conversational entry over the existing
+local CLI. TASK-016 implements the repository Skill and its new/existing/governed
+project evaluations; VER-004 records the accepted 100% versus 80% comparison.
+The Skill is also installed in the current user's Codex skills directory. It adds
+no remote integration or new CLI subsystem.
+
 ## Known constraints
 
 - v0.1 uses Python 3.11+ and the standard library at runtime;
@@ -74,6 +80,9 @@ actions are product non-goals rather than deferred work.
 - TASK-014 full suite: 161 tests passed; compileall and diff-check passed;
   `uv build --wheel` produced version `0.2.0.dev0`; current-source `pgk check`
   reported only the expected pre-commit dirty worktree state.
+- TASK-016: Codex Skill quick validation passed; with-skill behavior scored
+  15/15 versus baseline 12/15; Python 3.14 full regression passed 164 tests;
+  see [VER-004](verification/VER-004-agent-first-project-entry.md).
 
 ## Next action
 

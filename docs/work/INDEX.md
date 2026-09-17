@@ -28,6 +28,7 @@ No records yet.
 - [TASK-012](tasks/TASK-012-fix-migration-relative-links.md) — verified
 - [TASK-014](tasks/TASK-014-document-consistency-and-drift-checks.md) — verified
 - [TASK-015](tasks/TASK-015-narrow-future-roadmap.md) — verified
+- [TASK-016](tasks/TASK-016-agent-first-project-entry.md) — verified
 
 ## Bugs
 

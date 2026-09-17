@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+import os
 import re
 import subprocess
 import tomllib
@@ -62,6 +63,50 @@ class CheckResult:
 
 def _issue(issues: list[dict[str, str]], code: str, path: str, message: str) -> None:
     issues.append({"code": code, "path": path, "message": message})
+
+
+def _is_skill_document(relative: str) -> bool:
+    return bool(re.fullmatch(r"skills/[^/]+/SKILL\.md", relative))
+
+
+def _markdown_files(root: Path, ignored_dirs: set[str]) -> list[Path]:
+    """Collect Markdown while pruning directories that governance never scans."""
+
+    files: list[Path] = []
+    for current, dirnames, filenames in os.walk(root):
+        current_path = Path(current)
+        relative_parts = current_path.relative_to(root).parts
+        dirnames[:] = sorted(
+            dirname
+            for dirname in dirnames
+            if dirname not in ignored_dirs
+            and not dirname.startswith(".pytest-tmp")
+            and not (relative_parts == ("skills",) and dirname.endswith("-workspace"))
+        )
+        files.extend(current_path / filename for filename in filenames if filename.endswith(".md"))
+    return sorted(files)
+
+
+def _check_skill_document(relative: str, text: str, issues: list[dict[str, str]]) -> str:
+    """Validate Agent Skill metadata without treating it as a lifecycle record."""
+
+    match = re.match(r"\A---\s*\n(.*?)\n---\s*\n?", text, re.S)
+    if not match:
+        _issue(issues, "invalid_skill_frontmatter", relative, "SKILL.md requires YAML frontmatter")
+        return text
+    fields: dict[str, str] = {}
+    for line in match.group(1).splitlines():
+        if not line.strip() or line.lstrip().startswith("#") or ":" not in line:
+            continue
+        key, value = line.split(":", 1)
+        fields[key.strip()] = value.strip().strip("\"'")
+    missing = [field for field in ("name", "description") if not fields.get(field)]
+    if missing:
+        _issue(issues, "invalid_skill_frontmatter", relative, "skill metadata missing: " + ", ".join(missing))
+    expected_name = Path(relative).parent.name
+    if fields.get("name") and fields["name"] != expected_name:
+        _issue(issues, "invalid_skill_frontmatter", relative, f"skill name {fields['name']} does not match directory {expected_name}")
+    return text[match.end():]
 
 def _body_sections(body: str) -> dict[str, str]:
     matches = list(re.finditer(r"(?im)^##\s+([^\n]+)\s*$", body))
@@ -268,7 +313,7 @@ def run_checks(root: str | Path) -> CheckResult:
         f"{governance_dir.as_posix().rstrip('/')}/{suffix}/"
         for suffix in ("risk", "security", "releases", "operations/runbooks", "operations/incidents", "operations/postmortems")
     )
-    files = sorted(path for path in root.rglob("*.md") if not any(part in ignored_dirs or part.startswith(".pytest-tmp") for part in path.relative_to(root).parts))
+    files = _markdown_files(root, ignored_dirs)
     checked_files = tuple(path.relative_to(root).as_posix() for path in files)
     if visibility != "public":
         public_root = root / public_docs_dir
@@ -291,7 +336,9 @@ def run_checks(root: str | Path) -> CheckResult:
     for path in files:
         relative = path.relative_to(root).as_posix(); text = path.read_text(encoding="utf-8"); metadata = None; body = text
         strict_control_document = profile == "strict" and any(relative.startswith(prefix) for prefix in strict_control_prefixes)
-        if strict_control_document and text.startswith("---"):
+        if _is_skill_document(relative):
+            body = _check_skill_document(relative, text, issues)
+        elif strict_control_document and text.startswith("---"):
             _issue(issues, "unsupported_control_record_type", relative, "Strict control documents are ordinary Markdown; remove lifecycle frontmatter and do not add a new RecordType")
         elif text.startswith("---"):
             try: metadata, body = parse_frontmatter(text)

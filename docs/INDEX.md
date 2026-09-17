@@ -17,11 +17,13 @@ second copy of the documents it links to. Read [STATUS](STATUS.md), then
 - [Project Governance Kit v0.1 requirements (English)](requirements/2026-09-02-project-governance-kit-v0.1-requirements.md)
 - [Project Governance Kit v0.1 需求规格（中文，权威基线）](requirements/2026-09-02-project-governance-kit-v0.1-requirements.zh-CN.md)
 - [Project Governance Kit v0.2 迁移需求（中文，已确认）](requirements/2026-09-07-project-governance-kit-v0.2-migration-requirements.zh-CN.md)
+- [Agent-first 项目启动入口需求（中文，已确认）](requirements/2026-09-16-agent-first-project-entry-requirements.zh-CN.md)
 
 ## Design
 
 - [Project Governance Kit v0.1 技术设计（中文，已确认）](design/2026-09-04-project-governance-kit-v0.1-design.zh-CN.md)
 - [Project Governance Kit v0.2 迁移设计（中文，已确认）](design/2026-09-07-project-governance-kit-v0.2-migration-design.zh-CN.md)
+- [Agent-first 项目启动入口设计（中文，已确认）](design/2026-09-16-agent-first-project-entry-design.zh-CN.md)
 - [Project Governance Kit v0.1 design（历史草案）](design/2026-09-02-project-governance-kit-v0.1-design.md)
 - [ADR-0001: repository Markdown is the durable task record](decisions/ADR-0001-repository-markdown-task-record.md)
 - [ADR-0002: governance profiles and v0.1 scope revision](decisions/ADR-0002-governance-profiles-and-v0-1-scope.md)
@@ -32,6 +34,7 @@ second copy of the documents it links to. Read [STATUS](STATUS.md), then
 
 - [Work index](work/INDEX.md)
 - [Verification index](verification/INDEX.md)
+- [REVIEW-001: Agent-first project entry review](reviews/REVIEW-001-agent-first-project-entry.md)
 - [VER-001: v0.1 new-project baseline verification](verification/VER-001-v0-1-new-project-baseline.md)
 - [TASK-005: v0.1 new-project governance baseline](work/tasks/TASK-005-implement-v0-1-new-project-governance-baseline.md)
 - [TASK-006: governance profile and scope revision](work/tasks/TASK-006-record-governance-profile-scope-revision.md)
@@ -43,8 +46,10 @@ second copy of the documents it links to. Read [STATUS](STATUS.md), then
 - [TASK-012: fix migration relative links](work/tasks/TASK-012-fix-migration-relative-links.md)
 - [TASK-014: document consistency and drift checks](work/tasks/TASK-014-document-consistency-and-drift-checks.md)
 - [TASK-015: narrow future roadmap](work/tasks/TASK-015-narrow-future-roadmap.md)
+- [TASK-016: Agent-first project entry](work/tasks/TASK-016-agent-first-project-entry.md)
 - [VER-002: v0.2 migration MVP verification](verification/VER-002-v0-2-migration-mvp.md)
 - [VER-003: migration relative-link verification](verification/VER-003-migration-relative-links.md)
+- [VER-004: Agent-first project entry verification](verification/VER-004-agent-first-project-entry.md)
 - [v0.2 migration implementation plan](superpowers/plans/2026-09-07-project-governance-kit-v0.2-migration-implementation.md)
 - [Visibility design specification](superpowers/specs/2026-09-07-governance-visibility-design.md)
 - [v0.1 implementation plan](superpowers/plans/2026-09-02-project-governance-kit-v0.1-implementation.md)

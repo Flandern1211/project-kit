@@ -43,7 +43,20 @@ python -m project_governance --help
 
 ## 使用方法
 
-在一个新项目中，先进入项目根目录并初始化治理文件：
+推荐方式是安装仓库中的 Agent Skill 一次，之后只和 Codex 对话，由 Agent 调用
+`pgk`。Skill 源码位于 `skills/project-governance-kit/`；安装到 Codex 用户 Skill
+目录后，可以直接说：
+
+```text
+在 D:\Projects\PocketLedger 用 PGK 创建一个新项目。先初始化治理结构并和我确认需求，暂时不要写业务代码。
+```
+
+Agent 会判断目标是新项目、尚未接入的已有项目还是已治理项目。新项目在创建 draft
+需求后暂停等待确认；已有项目先只读运行 `adopt` 和 `doctor`，展示接入方案后暂停；
+已治理项目读取 STATUS 和关联记录继续工作。Skill 不自动授权 `git init`、commit、
+push、merge 或迁移 apply。
+
+如果不安装 Skill，也可以继续手工使用 CLI。在一个新项目中进入项目根目录并初始化：
 
 ```powershell
 pgk init --root . --project-name MyProject
@@ -86,6 +99,12 @@ pgk check --root . --json
 `verification` 和 `migration`。写入命令支持 `--dry-run`，面向 Agent 的调用可使用
 `--json`。
 完整参数、状态和协作流程见[使用说明](docs/usage.md)。
+
+Agent-first 的需求、设计和验证见：
+
+- [REQ-003-ZH](docs/requirements/2026-09-16-agent-first-project-entry-requirements.zh-CN.md)
+- [DES-004-ZH](docs/design/2026-09-16-agent-first-project-entry-design.zh-CN.md)
+- [VER-004](docs/verification/VER-004-agent-first-project-entry.md)
 
 常用命令：
 
