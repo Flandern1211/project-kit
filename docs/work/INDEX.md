@@ -30,6 +30,7 @@ No records yet.
 - [TASK-015](tasks/TASK-015-narrow-future-roadmap.md) — verified
 - [TASK-016](tasks/TASK-016-agent-first-project-entry.md) — verified
 - [TASK-017](tasks/TASK-017-explicit-skill-five-element-contract.md) — verified
+- [TASK-018](tasks/TASK-018-publish-skill-to-github.md) — verified
 
 ## Bugs
 

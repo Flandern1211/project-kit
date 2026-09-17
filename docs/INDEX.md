@@ -48,6 +48,7 @@ second copy of the documents it links to. Read [STATUS](STATUS.md), then
 - [TASK-015: narrow future roadmap](work/tasks/TASK-015-narrow-future-roadmap.md)
 - [TASK-016: Agent-first project entry](work/tasks/TASK-016-agent-first-project-entry.md)
 - [TASK-017: explicit Skill five-element contract](work/tasks/TASK-017-explicit-skill-five-element-contract.md)
+- [TASK-018: publish Skill to GitHub](work/tasks/TASK-018-publish-skill-to-github.md)
 - [VER-002: v0.2 migration MVP verification](verification/VER-002-v0-2-migration-mvp.md)
 - [VER-003: migration relative-link verification](verification/VER-003-migration-relative-links.md)
 - [VER-004: Agent-first project entry verification](verification/VER-004-agent-first-project-entry.md)

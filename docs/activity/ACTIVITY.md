@@ -46,3 +46,7 @@
 2026-09-17 | root | restore-description | TASK-017 | codex/task-017-skill-five-elements | restored the user-approved concise 82-character trigger description
 2026-09-17 | user | authorize-publish | TASK-017 | codex/task-017-skill-five-elements | user requested publishing the finalized Skill to Flandern1211/skills
 2026-09-17 | root | verify | TASK-017 | codex/task-017-skill-five-elements | Chinese five-element Skill and installed copy validated and ready for commit
+2026-09-17 | user | authorize-github-publish | TASK-018 | codex/task-018-publish-skill | authorized publishing the Skill to Flandern1211/skills
+2026-09-17 | root | start | TASK-018 | codex/task-018-publish-skill | target repository and publication conventions verified
+2026-09-17 | root | push | TASK-018 | Flandern1211/skills:feat/project-governance-kit@db52494 | validated Skill branch pushed after syncing main@8c0f186
+2026-09-17 | root | create-pull-request | TASK-018 | https://github.com/Flandern1211/skills/pull/1 | PR open and mergeable/clean; no CI checks configured

@@ -9,8 +9,8 @@ current_requirement: REQ-002-ZH
 current_design: DES-003-ZH
 current_task: none
 owner: root
-blocker: none
-next_action: create TASK-018 before publishing the Skill to Flandern1211/skills
+blocker: none; Flandern1211/skills PR #1 remains open for review
+next_action: review PR #1 and decide separately whether to merge it
 git_state: git_initialized
 updated: 2026-09-17
 ```
@@ -95,5 +95,6 @@ are identical and valid.
 
 ## Next action
 
-Create TASK-018 before publishing the Skill to Flandern1211/skills. Protected
-Git and remote actions continue to require explicit authorization.
+Review [Flandern1211/skills PR #1](https://github.com/Flandern1211/skills/pull/1)
+and decide separately whether to merge it. Protected Git and remote actions
+continue to require explicit authorization.
