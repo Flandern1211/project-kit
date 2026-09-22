@@ -9,3 +9,4 @@ The index is generated from records.
 - [VER-003](VER-003-migration-relative-links.md) — verified
 - [VER-004](VER-004-agent-first-project-entry.md) — verified
 - [VER-005](VER-005-skill-five-element-contract.md) — verified
+- [VER-006](VER-006-terminal-gate-verification.md) — verified

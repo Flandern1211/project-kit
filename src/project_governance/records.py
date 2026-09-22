@@ -8,8 +8,10 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Iterable, Sequence
 
-from .frontmatter import FrontmatterError, parse_frontmatter
+from .contracts import record_contract_issues
+from .frontmatter import FrontmatterError, parse_frontmatter, render_frontmatter
 from .config import load_config, record_type_enabled
+from .lifecycle import TERMINAL_STATUSES, status_allowed, transition_allowed
 from .models import RecordMetadata, RecordType, Status
 from .templates import render_template
 
@@ -54,6 +56,18 @@ def _record_files(root: Path) -> Iterable[Path]:
     for path in sorted(base.rglob("*.md")):
         if not any(part in ignored or part.startswith(".pytest-tmp") for part in path.relative_to(root).parts):
             yield path
+
+
+def _record_candidates(root: Path) -> list[RecordCandidate]:
+    candidates: list[RecordCandidate] = []
+    for path in _record_files(root):
+        try:
+            metadata, body = parse_frontmatter(path.read_text(encoding="utf-8"))
+        except (OSError, FrontmatterError):
+            continue
+        if metadata.type in _INDEXES:
+            candidates.append(RecordCandidate(path, metadata, body))
+    return sorted(candidates, key=lambda item: item.metadata.id)
 
 
 def _existing_ids(root: Path) -> set[str]:
@@ -109,6 +123,8 @@ def create_record(
         record_status = status if isinstance(status, Status) else Status(status)
     except ValueError as exc:
         raise ValueError(f"unsupported record status: {status}") from exc
+    if not status_allowed(record_type, record_status):
+        raise ValueError(f"{record_type.value} does not support status {record_status.value}")
     if record_id in _existing_ids(root):
         raise DuplicateRecordError(f"record id already exists: {record_id}")
     metadata = RecordMetadata(
@@ -169,17 +185,7 @@ def update_work_index(root: str | Path, *, dry_run: bool = False) -> Path:
 
     root = Path(root)
     index = root / _record_directories(root)[RecordType.TASK].parent / "INDEX.md"
-    candidates: list[RecordCandidate] = []
-    for path in _record_files(root):
-        if path == index:
-            continue
-        try:
-            metadata, _ = parse_frontmatter(path.read_text(encoding="utf-8"))
-        except (OSError, FrontmatterError):
-            continue
-        if metadata.type in {RecordType.TASK, RecordType.BUG}:
-            candidates.append(RecordCandidate(path, metadata))
-    candidates.sort(key=lambda item: item.metadata.id)
+    candidates = [item for item in _record_candidates(root) if item.metadata.type in {RecordType.TASK, RecordType.BUG}]
     content = _index_content(candidates, base_dir=index.parent)
     if index.exists():
         existing = index.read_text(encoding="utf-8")
@@ -282,30 +288,100 @@ def _board_content(items: Sequence[RecordCandidate]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def expected_generated_views(root: str | Path) -> dict[Path, str]:
+    """Return canonical generated view content without writing files."""
+
+    root = Path(root)
+    candidates = _record_candidates(root)
+    work_root = _record_directories(root)[RecordType.TASK].parent
+    work_index = root / work_root / "INDEX.md"
+    result = {
+        work_index: _index_content(
+            [item for item in candidates if item.metadata.type in {RecordType.TASK, RecordType.BUG}],
+            base_dir=work_index.parent,
+        )
+    }
+    for kind, index in _indexes_for_project(root).items():
+        selected = [item for item in candidates if item.metadata.type is kind]
+        result[root / index] = _directory_index(
+            selected, root / index, f"{kind.value}-index", f"{kind.value.title()} index"
+        )
+    result[root / work_root / "BOARD.md"] = _board_content(candidates)
+    return result
+
+
 def update_indexes(root: str | Path, *, dry_run: bool = False) -> dict[str, Path]:
     """Refresh all generated record indexes and the work board safely."""
     root = Path(root)
     _ensure_views_writable(root)
-    candidates: list[RecordCandidate] = []
+    generated = expected_generated_views(root)
+    result: dict[str, Path] = {}
+    for kind, index in _indexes_for_project(root).items():
+        marker = f"{kind.value}-index"
+        _view_write(root / index, generated[root / index], marker, dry_run=dry_run)
+        result[kind.value] = root / index
+    work_root = _record_directories(root)[RecordType.TASK].parent
+    board = root / work_root / "BOARD.md"
+    _view_write(board, generated[board], "board", dry_run=dry_run)
+    result["board"] = board
+    return result
+
+
+def transition_record(
+    root: str | Path,
+    record_id: str,
+    target_status: str | Status,
+    *,
+    dry_run: bool = False,
+) -> tuple[Path, Status, Status]:
+    """Apply one legal formal status transition and refresh generated views."""
+
+    root = Path(root)
+    target = target_status if isinstance(target_status, Status) else Status(target_status)
+    matches: list[tuple[Path, RecordMetadata, str]] = []
+    records: dict[str, tuple[str, RecordMetadata, str]] = {}
     for path in _record_files(root):
         try:
             metadata, body = parse_frontmatter(path.read_text(encoding="utf-8"))
         except (OSError, FrontmatterError):
             continue
-        if metadata.type in _INDEXES:
-            candidates.append(RecordCandidate(path, metadata, body))
-    result: dict[str, Path] = {}
-    for kind, index in _indexes_for_project(root).items():
-        selected = [c for c in candidates if c.metadata.type is kind]
-        marker = f"{kind.value}-index"
-        content = _directory_index(selected, root / index, marker, f"{kind.value.title()} index")
-        _view_write(root / index, content, marker, dry_run=dry_run)
-        result[kind.value] = root / index
-    work_root = _record_directories(root)[RecordType.TASK].parent
-    board = root / work_root / "BOARD.md"
-    _view_write(board, _board_content(candidates), "board", dry_run=dry_run)
-    result["board"] = board
-    return result
+        relative = path.relative_to(root).as_posix()
+        records[metadata.id] = (relative, metadata, body)
+        if metadata.id == record_id:
+            matches.append((path, metadata, body))
+    if not matches:
+        raise ValueError(f"record does not exist: {record_id}")
+    if len(matches) > 1:
+        raise ValueError(f"record id is duplicated: {record_id}")
+    path, metadata, body = matches[0]
+    if not transition_allowed(metadata.type, metadata.status, target):
+        raise ValueError(f"illegal {metadata.type.value} transition: {metadata.status.value} -> {target.value}")
+
+    updated_metadata = RecordMetadata(
+        metadata.id, metadata.type, target, metadata.created, date.today(), list(metadata.related)
+    )
+    records[metadata.id] = (path.relative_to(root).as_posix(), updated_metadata, body)
+    if target in TERMINAL_STATUSES:
+        contract_issues = record_contract_issues(
+            root,
+            path.relative_to(root).as_posix(),
+            updated_metadata,
+            body,
+            records,
+            profile=load_config(root / ".project-governance.toml").profile,
+            require_v2=True,
+        )
+        if contract_issues:
+            summary = "; ".join(f"{issue.code}: {issue.message}" for issue in contract_issues)
+            raise ValueError(f"terminal transition blocked: {summary}")
+
+    if not dry_run:
+        _ensure_views_writable(root)
+        path.write_text(render_frontmatter(updated_metadata) + body.rstrip() + "\n", encoding="utf-8")
+        update_work_index(root)
+        update_indexes(root)
+        append_activity(root, "pgk", "transition", record_id, "N/A", f"{metadata.status.value}->{target.value}")
+    return path, metadata.status, target
 
 
 def append_activity(root: str | Path, actor: str, action: str, record_id: str, git_ref: str, result: str) -> Path:

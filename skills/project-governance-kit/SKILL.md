@@ -65,7 +65,18 @@ description: "通过自然语言让 Agent 使用 PGK 创建新项目、接入已
 5. 当前任务或用户请求变更关联的记录。
 
 存在活动任务时先恢复该任务。用户请求新行为时，遵循仓库已有的需求、设计和任务链，
-不要自行绕过治理流程。
+不要自行绕过治理流程。把目标仓库的 `AGENTS.md` 作为任务执行和收尾合同；正式状态使用 `pgk transition`，不要通过手改 frontmatter 或一次批量授权跳过逐项验收。
+
+读取 `.project-governance.toml` 中的 `kit_version`，并与当前 `pgk` 版本比较。版本不同或
+当前版本的受管合同不完整时，先运行只读升级预览：
+
+```text
+pgk upgrade --root <root> --dry-run --json
+```
+
+汇总逐文件 diff、未变更项和冲突。不得只编辑 `kit_version`，也不得用 `pgk init
+--mode supplement` 代替升级。用户已经明确要求更新该项目 PGK 配置时，该请求授权执行
+无冲突的 `pgk upgrade --apply`；若预览有冲突，停止写入并展示冲突，不覆盖项目自定义内容。
 
 #### 已有项目（existing）
 

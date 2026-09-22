@@ -8,8 +8,10 @@ and `MIG-`. The supported lifecycle RecordTypes are `requirement`, `design`,
 use YAML frontmatter with `id`, `type`, `status`, `created`, and `updated`.
 
 The lifecycle statuses are `draft`, `accepted`, `in_progress`, `in_review`,
-`blocked`, `verified`, `done`, `rejected`, and `superseded`. A record may move to `verified` only when
-its verification section names the evidence used.
+`blocked`, `verified`, `done`, `rejected`, and `superseded`. Record types have
+different legal transitions; use `pgk transition` rather than editing formal
+status by hand. A task or bug may move to a terminal state only when its
+terminal-v2 contract and reciprocal verification pass deterministic checks. Legacy records without the marker remain readable and are upgraded only before a new formal terminal transition.
 
 The index links to records but does not duplicate their bodies. Meaningful
 updates append a short timeline entry to the existing record. Do not create a
@@ -31,6 +33,10 @@ silently modify the implementer's branch.
 Verification must name the command or inspection evidence used. A passing test
 suite does not by itself prove external services, deployment, performance, or
 long-running behavior.
+New task, bug, and verification records use stable `AC-*` identifiers. Every
+terminal acceptance ID must have both an outcome and evidence in the reciprocal
+verification record. Lite and Standard require verification; Strict also
+requires a terminal review.
 
 ## Documentation consistency
 
@@ -44,11 +50,20 @@ For Project Governance Kit itself, `pgk check` compares the package version
 with `.project-governance.toml`, `docs/STATUS.md`, `README.md`, and
 `README.en.md`. A mismatch is a release and handoff blocker.
 
+## Kit upgrades
+
+For an already governed project, run `pgk upgrade --dry-run --json` before
+adopting a newer Kit contract. Review every file and conflict, then use
+`pgk upgrade --apply`; never change only `kit_version`. The upgrade preserves
+historical records and project-owned sections, and advances configuration only
+after all managed contract files are written successfully.
+
 ## Two-phase finalization
 
-Complete records and code, run semantic checks, fill evidence, commit once, run
-read-only clean-tree checks, and do not edit the repository after the clean-tree
-check. Post-commit output belongs in the external experiment report or handoff.
+Complete records and code, run semantic checks, fill evidence, use
+`head_commit: record-commit`, commit once, then run read-only clean-tree checks.
+Do not put predicted commit or push state in current-state documents. Exact
+post-commit output belongs in the external experiment report or handoff.
 
 ## Security
 

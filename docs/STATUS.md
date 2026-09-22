@@ -3,16 +3,16 @@
 ```yaml
 status: verified
 project_stage: active_development
-version: 0.2.0.dev0
+version: 0.2.0.dev1
 active_task: none
-current_requirement: REQ-002-ZH
-current_design: DES-003-ZH
+current_requirement: REQ-001-ZH
+current_design: DES-002-ZH
 current_task: none
 owner: root
-blocker: none; Flandern1211/skills PR #1 remains open for review
-next_action: review PR #1 and decide separately whether to merge it
+blocker: none
+next_action: none; new work requires an accepted requirement and task
 git_state: git_initialized
-updated: 2026-09-17
+updated: 2026-09-22
 ```
 
 ## Current scope
@@ -58,6 +58,15 @@ The runtime instructions, concise discovery description, and Codex UI prompt
 are localized for Chinese. VER-005 confirms the repository and installed copies
 are identical and valid.
 
+TASK-019 adds deterministic lifecycle transitions and terminal record gates. New
+task, bug, and verification records use stable acceptance IDs and reciprocal
+verification evidence; historical records remain readable without repository-wide
+migration. Generated-view drift and invalid Git evidence are now checkable facts.
+
+TASK-019 terminal gates and the governed-project upgrade path passed focused
+and full verification. The FundAgent audit remains read-only; its upgrade
+proposal was generated but not applied.
+
 ## Known constraints
 
 - v0.1 uses Python 3.11+ and the standard library at runtime;
@@ -83,18 +92,22 @@ are identical and valid.
   compileall and diff-check passed; worktree-local pgk check returned `ok=true`.
 - TASK-012 link-rewrite suite: 139 tests passed; real TouzhiAgent clone
   migration produced no broken-link issues;
-- TASK-014 full suite: 161 tests passed; compileall and diff-check passed;
-  `uv build --wheel` produced version `0.2.0.dev0`; current-source `pgk check`
-  reported only the expected pre-commit dirty worktree state.
+- TASK-014 full suite: 161 tests passed; compileall, diff-check, and package
+  build passed; current-source `pgk check` reported only the expected
+  pre-commit dirty worktree state.
 - TASK-016: Codex Skill quick validation passed; with-skill behavior scored
   15/15 versus baseline 12/15; Python 3.14 full regression passed 164 tests;
   see [VER-004](verification/VER-004-agent-first-project-entry.md).
 - TASK-017: the five-element runtime contract and installed copy passed Codex
   Skill validation; checker regression passed 31 tests; see
   [VER-005](verification/VER-005-skill-five-element-contract.md).
+- TASK-019: 184-test full regression, 7 focused upgrade tests, compileall, and
+  diff checks passed; FundAgent upgrade preview proposed 10 changes and wrote
+  nothing; see [VER-006](verification/VER-006-terminal-gate-verification.md).
 
 ## Next action
 
-Review [Flandern1211/skills PR #1](https://github.com/Flandern1211/skills/pull/1)
-and decide separately whether to merge it. Protected Git and remote actions
-continue to require explicit authorization.
+No active task. TASK-019 is verified and its evidence is recorded in
+[VER-006](verification/VER-006-terminal-gate-verification.md). Review of
+[Flandern1211/skills PR #1](https://github.com/Flandern1211/skills/pull/1)
+remains a separate protected remote action.

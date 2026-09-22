@@ -11,9 +11,11 @@ import tomllib
 
 from .authorization import _authorization_fields, _when
 from .config import default_visibility_dirs, load_config
+from .contracts import record_contract_issues
 from .frontmatter import FrontmatterError, parse_frontmatter
 from .git_context import GitInspectionError, inspect_git
 from .migration import _normalize_generated, _render_governance_copy, load_migration_plan
+from .records import expected_generated_views
 from .scaffold import required_artifacts_for_profile
 from .version import __version__
 
@@ -420,6 +422,15 @@ def run_checks(root: str | Path) -> CheckResult:
             for record_path, metadata, _body, _text in records:
                 if metadata.type.value == kind and not re.search(rf"\[{re.escape(metadata.id)}\]\(", content): _issue(issues, "unindexed_record", record_path, f"record is not linked from {relative}: {metadata.id}")
     record_by_id = {metadata.id: (relative, metadata) for relative, metadata, _body, _text in records}
+    contract_records = {
+        metadata.id: (relative, metadata, body)
+        for relative, metadata, body, _text in records
+    }
+    for relative, metadata, body, _text in records:
+        for issue in record_contract_issues(
+            root, relative, metadata, body, contract_records, profile=profile
+        ):
+            _issue(issues, issue.code, relative, issue.message)
     for relative, metadata, _body, _text in records:
         for related in metadata.related:
             if RECORD_ID_RE.fullmatch(related) and related not in record_by_id:
@@ -497,7 +508,7 @@ def run_checks(root: str | Path) -> CheckResult:
             marker = f"{kind}-index"
             view_path = root / relative
             if view_path.exists() and f"<!-- PGK_GENERATED: {marker} -->" not in view_path.read_text(encoding="utf-8"):
-                _issue(issues, "invalid_view_marker", view, "record index is missing PGK_GENERATED marker")
+                _issue(issues, "invalid_view_marker", relative, "record index is missing PGK_GENERATED marker")
         work_index = root / governance_dir / "work/INDEX.md"
         if work_index.exists() and "<!-- PGK_GENERATED: work-index -->" not in work_index.read_text(encoding="utf-8"):
                 _issue(issues, "invalid_view_marker", (governance_dir / "work/INDEX.md").as_posix(), "work index is missing PGK_GENERATED marker")
@@ -514,6 +525,20 @@ def run_checks(root: str | Path) -> CheckResult:
                 _issue(issues, "invalid_board_contract", (governance_dir / "work/BOARD.md").as_posix(), "board header is invalid")
         if activity_view.exists() and "<!-- timestamp | actor | action | record_id | git_ref | result -->" not in activity_view.read_text(encoding="utf-8"):
                 _issue(issues, "invalid_activity_header", (governance_dir / "activity/ACTIVITY.md").as_posix(), "activity header is invalid")
+        try:
+            for view_path, expected in expected_generated_views(root).items():
+                if not view_path.exists():
+                    continue
+                actual = view_path.read_text(encoding="utf-8").replace("\r\n", "\n")
+                if actual != expected.replace("\r\n", "\n"):
+                    _issue(
+                        issues,
+                        "stale_generated_view",
+                        view_path.relative_to(root).as_posix(),
+                        "generated view differs from current records; run pgk index",
+                    )
+        except (OSError, ValueError) as exc:
+            _issue(issues, "generated_view_unreadable", governance_dir.as_posix(), f"cannot render generated views: {exc}")
     activity = root / governance_dir / "activity/ACTIVITY.md"
     if activity.exists():
         for number, line in enumerate(activity.read_text(encoding="utf-8").splitlines(), 1):

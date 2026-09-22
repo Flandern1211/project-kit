@@ -12,7 +12,8 @@ Markdown/TOML 文件，并提供离线检查能力。
 
 - 初始化或检查项目治理结构；
 - 创建需求、设计、决策、任务、Bug 和验收记录；
-- 检查文档元数据、ID、状态和本地链接；
+- 校验正式状态迁移、终态验收合同、文档元数据、ID 和本地链接；
+- 安全预览和应用已治理项目的 Kit 合同升级；
 - 输出适合人和 Agent 使用的文本或 JSON；
 - 读取 Git 分支、提交和工作区状态；
 - 更新任务的跨会话交接区。
@@ -53,7 +54,7 @@ python -m project_governance --help
 
 Agent 会判断目标是新项目、尚未接入的已有项目还是已治理项目。新项目在创建 draft
 需求后暂停等待确认；已有项目先只读运行 `adopt` 和 `doctor`，展示接入方案后暂停；
-已治理项目读取 STATUS 和关联记录继续工作。Skill 不自动授权 `git init`、commit、
+已治理项目读取 STATUS 和关联记录继续工作，并以目标项目的 `AGENTS.md` 为执行合同，使用 `pgk transition` 更新正式状态；Kit 版本不一致时先预览 `pgk upgrade`，而不是只改配置版本。Skill 不自动授权 `git init`、commit、
 push、merge 或迁移 apply。
 
 如果不安装 Skill，也可以继续手工使用 CLI。在一个新项目中进入项目根目录并初始化：
@@ -87,10 +88,21 @@ pgk adopt --root C:\path\to\project --json
 pgk doctor --root C:\path\to\project
 ```
 
+已治理项目升级 Kit 合同时先审查只读提案，再显式应用：
+
+```powershell
+pgk upgrade --root C:\path\to\project --dry-run --json
+pgk upgrade --root C:\path\to\project --apply --json
+```
+
+升级只修改已知的 Kit 管理章节、模板和生成视图，保留项目自定义章节与历史记录；
+有冲突或未知来源版本时整体拒绝，成功写完后才更新 `kit_version`。
+
 创建任务并在不同 Agent/会话之间交接：
 
 ```powershell
 pgk new task TASK-001 "Implement feature" --root . --status in_progress --related REQ-001
+pgk transition TASK-001 in_review --root . --dry-run --json
 pgk handoff TASK-001 --root . --next-action "run integration tests" --verification "unit tests passed"
 pgk check --root . --json
 ```
@@ -115,16 +127,18 @@ pgk doctor     检查项目治理状态
 pgk check      检查文档、链接和状态
 pgk new        创建治理记录
 pgk index      更新工作索引
+pgk transition 校验并更新正式记录状态
+pgk upgrade    预览或应用已治理项目的 Kit 合同升级
 pgk handoff    更新任务交接信息
 pgk migrate    生成、批准和应用已有文档迁移方案
 ```
 
 ## 当前状态
 
-当前版本为预发布版本 `0.2.0.dev0`。工具包仓库自身使用这套治理架构进行开发和验证，
+当前版本为预发布版本 `0.2.0.dev1`。工具包仓库自身使用这套治理架构进行开发和验证，
 TouzhiAgent 是第一个外部试验项目。
 
-v0.2 已实现已有项目补齐与文档迁移 MVP：
+v0.2 已实现已有项目补齐、文档迁移 MVP 和受控 Kit 合同升级：
 
 ```powershell
 pgk init --root C:\path\to\project --mode supplement

@@ -80,4 +80,4 @@ root
 branch: codex/task-018-publish-skill
 worktree: D:/Project/project-kit
 base_commit: ca2a64a
-head_commit: final task commit
+head_commit: 12c2714

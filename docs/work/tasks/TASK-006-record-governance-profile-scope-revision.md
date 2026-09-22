@@ -74,4 +74,4 @@ TASK-006 已验证；profile 运行时行为由 TASK-007 实现。未来范围�
 branch: N/A
 worktree: N/A
 base_commit: N/A
-head_commit: N/A
+head_commit: f4d81c9

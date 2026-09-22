@@ -18,6 +18,19 @@ provide a runtime logging service.
 - Run `pgk check` (or the equivalent Python module command) before handoff or
   pull request review.
 - Do not mark work verified without test or inspection evidence.
+- Give every new task/bug acceptance criterion a stable `AC-*` identifier and
+  map each identifier to an outcome and evidence in its reciprocal VER record.
+- Use `pgk transition` for formal status changes. Batch implementation
+  authorization does not waive task acceptance criteria.
+- Before a terminal transition, leave deferred, contradicted, uncalibrated, or
+  unperformed acceptance work non-terminal or blocked. Aggregate test success
+  proves only the criteria those tests cover.
+- Edit source records, then run `pgk index`; do not hand-edit generated INDEX
+  or BOARD views.
+- For an already governed project, run `pgk upgrade` as a preview before
+  adopting a newer Kit contract. Never change only `kit_version`; apply the
+  reviewed upgrade so managed documents, templates, views, and configuration
+  advance together.
 - Do not overwrite existing project documents during adoption; show a proposal
   first.
 - Do not commit credentials, API keys, private data, model payloads, or full
@@ -88,7 +101,10 @@ source of truth.
 
 ## Two-phase finalization
 
-Complete records and code, run semantic checks, fill evidence, commit once, run
-read-only clean-tree checks, and do not edit the repository after the clean-tree
-check. Put post-commit output in the external experiment report or handoff.
+Complete records and code, run semantic checks, fill evidence, set terminal
+task/bug `head_commit: record-commit`, and use `pgk transition`. Commit once,
+then run read-only clean-tree checks. Do not put predicted commit/push state in
+STATUS or terminal records. Put exact post-commit output in the external
+experiment report or handoff.
+Do not edit the repository after the clean-tree check.
 

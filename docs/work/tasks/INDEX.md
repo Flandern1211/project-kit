@@ -21,3 +21,4 @@ The index is generated from records.
 - [TASK-016](TASK-016-agent-first-project-entry.md) — verified
 - [TASK-017](TASK-017-explicit-skill-five-element-contract.md) — verified
 - [TASK-018](TASK-018-publish-skill-to-github.md) — verified
+- [TASK-019](TASK-019-enforce-terminal-governance-gates.md) — verified

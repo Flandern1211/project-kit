@@ -14,7 +14,9 @@ and provides offline validation.
 
 - initialize or inspect a project governance structure;
 - create requirement, design, decision, task, bug, and verification records;
-- validate document metadata, IDs, statuses, and local links;
+- validate formal status transitions, terminal acceptance contracts, metadata,
+  IDs, and local links;
+- safely preview and apply Kit contract upgrades to governed projects;
 - provide human-readable and JSON output for people and agents;
 - inspect Git branches, commits, and worktree state;
 - update a task's cross-session handoff section.
@@ -65,7 +67,7 @@ Create a new project at D:\Projects\PocketLedger with PGK. Initialize governance
 The Agent classifies the target as new, existing, or already governed. New
 projects pause after a draft requirement; existing projects run read-only
 `adopt` and `doctor` before proposing changes; governed projects resume from
-STATUS and linked records. The Skill does not authorize `git init`, commit,
+STATUS and linked records, treats the target `AGENTS.md` as its execution contract, and uses `pgk transition` for formal status changes. When the Kit version differs, it previews `pgk upgrade` instead of editing only the configured version. The Skill does not authorize `git init`, commit,
 push, merge, or migration apply.
 
 The CLI remains available as a manual fallback. From a new project root,
@@ -104,10 +106,24 @@ pgk adopt --root C:\path\to\project --json
 pgk doctor --root C:\path\to\project
 ```
 
+For an already governed project, review the read-only Kit upgrade plan before
+applying it explicitly:
+
+```powershell
+pgk upgrade --root C:\path\to\project --dry-run --json
+pgk upgrade --root C:\path\to\project --apply --json
+```
+
+The upgrade changes only known Kit-managed sections, templates, and generated
+views. It preserves project sections and historical records, rejects the whole
+operation on a conflict or unknown source version, and updates `kit_version`
+last.
+
 Create a task and hand it between agents or sessions:
 
 ```powershell
 pgk new task TASK-001 "Implement feature" --root . --status in_progress --related REQ-001
+pgk transition TASK-001 in_review --root . --dry-run --json
 pgk handoff TASK-001 --root . --next-action "run integration tests" --verification "unit tests passed"
 pgk check --root . --json
 ```
@@ -132,17 +148,20 @@ pgk doctor     inspect project governance health
 pgk check      validate documents, links, and status
 pgk new        create a governance record
 pgk index      update the work index
+pgk transition validate and update formal record status
+pgk upgrade    preview or apply a governed-project Kit contract upgrade
 pgk handoff    update task handoff information
 pgk migrate    plan, approve, and apply existing-document migration
 ```
 
 ## Status
 
-The current version is the pre-release `0.2.0.dev0`. The toolkit repository
+The current version is the pre-release `0.2.0.dev1`. The toolkit repository
 dogfoods its own governance architecture, and TouzhiAgent is its first
 external trial project.
 
-v0.2 includes the existing-project supplement and document migration MVP:
+v0.2 includes existing-project supplement, the document migration MVP, and
+controlled Kit contract upgrades:
 
 ```powershell
 pgk init --root C:\path\to\project --mode supplement

@@ -16,6 +16,7 @@
 | REQ-002-ZH | requirement | accepted | N/A | REQ-001-ZH, DES-003-ZH | N/A / N/A | N/A | N/A | N/A |
 | REQ-003-ZH | requirement | accepted | N/A | ADR-0004 | N/A / N/A | N/A | N/A | N/A |
 | REVIEW-001 | review | verified | root；行为输出由用户审核。 | TASK-016, REQ-003-ZH, DES-004-ZH, VER-004 | N/A / N/A | iteration-1：with-skill 15/15，without-skill 12/15； | 无实现 blocker。commit 和用户级安装尚未授权。 | 用户决定是否授权本地 commit，以及是否将 Skill 安装到当前 Codex 用户目录。 |
+| REVIEW-002 | review | verified | Codex | TASK-019 | N/A / N/A | AC-1: Inspected generated AGENTS.md and scaffold closure rules. | None. | Review is complete; await the repository commit decision. |
 | TASK-000 | task | verified | root | REQ-001, DES-001 | codex/bootstrap-v0.1 / dirty | 20 tests passed; pgk check ok; document validator 0 errors | none | review and approve the first TouzhiAgent external trial |
 | TASK-001 | task | verified | root | N/A | codex/bootstrap-v0.1 / dirty | 20 tests passed; pgk check ok; document validator 0 errors | none | review the usage guide and begin the TouzhiAgent trial |
 | TASK-002 | task | verified | root | N/A | codex/bootstrap-v0.1 / dirty | pgk check ok; document validator 0 errors | none | review the Chinese requirements document |
@@ -34,9 +35,11 @@
 | TASK-016 | task | verified | root | REQ-003-ZH, DES-004-ZH, ADR-0004 | codex/task-016-agent-first-entry / D:/Project/project-kit | 用户已确认 `evals/evals.json` 中的三类测试提示； | 无。既有 `strict-agent-guidance` linked worktree 中的 pytest 临时目录不属于本任务； | 任务已完成并提交；后续只规划的两个扩展需分别建立新的需求、设计和任务。 |
 | TASK-017 | task | verified | root | REQ-003-ZH, DES-004-ZH, TASK-016 | codex/task-017-skill-five-elements / D:/Project/project-kit | 仓库和已安装 Skill 均通过 Codex 官方快速校验； | 无。 | TASK-017 已完成；GitHub 发布由新的 TASK-018 跟踪。 |
 | TASK-018 | task | verified | root | TASK-017, VER-005 | codex/task-018-publish-skill / D:/Project/project-kit | GitHub 登录账号：`Flandern1211`；目标仓库：`Flandern1211/skills`；base：`main`； | 无发布 blocker。PR 仍待用户审查和决定是否合并。 | 审查 PR #1；合并属于独立远程动作，尚未执行。 |
+| TASK-019 | task | verified | Codex | REQ-001-ZH, DES-002-ZH | codex/task-019-terminal-gates / C:/Users/31800/.codex/worktrees/task-019-terminal-gates/project-kit | VER-006 completed all eight acceptance checks. | None. | Review the AC-8 evidence and decide whether to authorize the repository commit. |
 | VER-000 | verification | verified | root | TASK-000 | N/A / N/A | `py -3 -m pytest -o addopts='' -q` — 20 passed; | none | Use VER-001 for the current v0.1 baseline acceptance. |
 | VER-001 | verification | verified | root | TASK-005, REQ-001-ZH, DES-002-ZH | N/A / N/A | `py -3 -m pytest -o addopts='' --basetemp D:\pgk-final-suite13 -ra` — full | The shared checkout is intentionally dirty until a user-authorized commit; | Review this baseline and decide whether to authorize a commit; remote |
 | VER-002 | verification | verified | root | REQ-002-ZH, DES-003-ZH, TASK-011 | N/A / N/A | ```text | 无代码阻塞。验证记录中的 worktree 状态是当时的历史快照，当前状态以 `docs/STATUS.md` 和最新 Git 检查为准。 | 后续迁移变更使用新的 TASK，并重新生成迁移和验证证据。 |
 | VER-003 | verification | verified | root | TASK-012, REQ-002-ZH, DES-003-ZH | N/A / N/A | 新增相对链接单元测试：已迁移目标、保留源文件目标和外部 URL； | 不存在的源链接仍保留并需要人工处理；Kit 不会猜测不存在的目标。 | TASK-012 已合并到本地 `main` 的 8098a4c；push 仍需用户单独授权。 |
 | VER-004 | verification | verified | root | TASK-016, REQ-003-ZH, DES-004-ZH | N/A / N/A | 用户审核并批准三条 iteration-1 评测提示和静态评测结果； | Skill 尚未安装到用户全局 Codex Skill 目录；安装和仓库 commit 都需要单独明确授权。 | 审阅 TASK-016 变更，并决定是否授权本地 commit；如需立即使用，再单独授权安装 Skill。 |
 | VER-005 | verification | verified | root | TASK-017, REQ-003-ZH, DES-004-ZH | N/A / N/A | 运行时 `SKILL.md` 明确包含“触发场景、输入、流程、输出、验收标准”五个中文一级章节； | 无。 | TASK-017 已验证；GitHub 发布使用独立任务记录。 |
+| VER-006 | verification | verified | Codex | TASK-019 | N/A / N/A | AC-1: `AGENTS.md`, generated scaffold text, and Skill guidance inspected; generated guidance states the closure protocol. | None. | Verification complete; the remaining protected action is the repository commit decision. |
