@@ -14,14 +14,18 @@ project itself, or mutate remote platforms.
 | `pgk init` | 新项目初始化、已有项目 `supplement` 补齐、Lite/Standard/Strict、single/sequential、team-private/hybrid/public | 只创建缺失文件；不覆盖已有文件 | profile、协作模式、visibility 和目标目录 |
 | `pgk adopt` | 只读盘点已有治理文件、Git 状态、候选文档和敏感项 | 不写文件 | 候选类型、敏感内容和排除规则 |
 | `pgk doctor` | 汇总 check、adoption、Git 和 Python/pytest/临时目录预检 | 只读 | 环境阻塞与治理问题必须分开判断 |
-| `pgk check` | 检查基线、链接、frontmatter、ID、状态、索引、STATUS 引用、配置、Kit 版本、Git 和迁移结果 | 只读；发现问题返回退出码 1 | 不得把 dirty/unregistered 等问题误报为已验证 |
+| `pgk check` | 检查基线、链接、frontmatter、ID、状态、终态合同、生成视图、STATUS 引用、配置、Kit 版本、Git 和迁移结果 | 只读；发现问题返回退出码 1 | 不得把结构完整误报为验收完成 |
 | `pgk new` | 创建 requirement/design/decision/task/bug/review/verification/migration 记录 | 拒绝重复 ID 和覆盖；支持 `--dry-run` | 上游记录、owner、scope 和证据字段 |
 | `pgk index` | 重建记录索引、工作索引和 BOARD | 只重写带 `PGK_GENERATED` 标记的视图 | 记录是否完整入索引 |
+| `pgk transition` | 校验并执行正式记录状态迁移；终态任务/缺陷强制验证 terminal-v2 合同 | 原子更新 frontmatter、生成视图和活动记录；支持 `--dry-run` | 每个 `AC-*` 是否有 reciprocal VER 结果和证据 |
+| `pgk upgrade` | 预览或应用已治理项目的版本化 Kit 合同升级 | 默认只读；仅 `--apply` 写入；冲突时零写入，配置最后更新 | 逐文件 diff/hash、项目自定义章节、来源版本和冲突 |
 | `pgk handoff` | 更新 TASK/BUG 的受控 handoff 区块和活动记录 | 只写标记区；不改变 frontmatter 状态 | branch、HEAD、dirty、未提交内容、阻塞和唯一下一步 |
 | `pgk migrate` | 包含 `plan`、`approve`、`apply`：扫描、审查并执行文档迁移 | 原文件不移动、不删除；只应用明确批准的条目 | 来源、目标、哈希、敏感性、置信度、链接、冲突和 VER 证据 |
 
-当前不实现：parallel Agent 调度、自动 Git commit/push/merge、Issue/PR 或远程仓库操作、
-Web 管理后台、模型调用、公开副本导出、历史清理以及 Markdown/UTF-8 纯文本之外的自动转换。
+后续只规划两项扩展：并行 Agent 协作安全/worktree 管理，以及经任务级明确授权的本地
+自动 commit。Web/托管后台、模型调用、复杂格式转换、语义改写、Git 历史清理、远程
+权限修改、自动治理等级评估、通用外部平台集成、公开副本自动导出，以及自动
+push/PR/merge/tag/release 均为产品非目标，不属于延期路线图。
 
 ## 1. 安装 / Install
 
@@ -43,6 +47,52 @@ After installation, use the `pgk` command or the equivalent module entry point:
 pgk --help
 python -m project_governance --help
 ```
+
+### 1.1 推荐的 Agent-first 使用方式 / Recommended Agent-first workflow
+
+仓库提供 `skills/project-governance-kit/`。将该目录复制到 Codex 用户 Skill 目录
+（默认 `%USERPROFILE%\.codex\skills\project-governance-kit`；自定义 `CODEX_HOME`
+时使用其 `skills` 子目录）后，通常不需要再手工输入 PGK 命令。
+
+The repository includes `skills/project-governance-kit/`. Copy it to the Codex
+user skills directory (normally
+`%USERPROFILE%\.codex\skills\project-governance-kit`, or the `skills` directory
+under a custom `CODEX_HOME`). After that, normal use is conversational.
+
+在本仓库根目录可以显式执行一次：
+
+```powershell
+$pgkCodexRoot = if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $env:USERPROFILE '.codex' }
+$pgkSkillTarget = Join-Path $pgkCodexRoot 'skills\project-governance-kit'
+New-Item -ItemType Directory -Force -Path $pgkSkillTarget | Out-Null
+Copy-Item -Recurse -Force .\skills\project-governance-kit\* $pgkSkillTarget
+```
+
+这是用户级配置写入，应由用户明确执行或授权 Agent 执行。更新 Skill 时重新复制该目录。
+
+新项目示例：
+
+```text
+在 D:\Projects\PocketLedger 用 PGK 创建一个项目。先初始化并和我确认需求，不要开始写业务代码。
+```
+
+已有项目示例：
+
+```text
+把 D:\Projects\legacy-orders 接入 PGK。先只读检查并展示方案，不要修改现有文件。
+```
+
+已治理项目示例：
+
+```text
+继续这个 PGK 项目的当前任务，先读取 STATUS 和关联记录恢复上下文。
+```
+
+Agent 会负责命令编排和治理记录，用户负责目标、需求确认和受保护动作授权。新项目正常
+停在需求确认；已有项目正常停在接入方案确认。CLI 仍是确定性执行层和手工备用入口。
+
+Skill 安装是一次性的本地配置动作，不由 `pgk init` 静默执行。核心 Kit 仍不调用模型
+提供商或远程服务。
 
 ## 2. 新项目 / New project
 
@@ -146,6 +196,39 @@ pgk migrate apply MIG-001 --root C:\path\to\project --json
 
 Migration mode first creates a `MIG-*` plan. It automatically handles only Markdown, Markdown variants, and UTF-8 plain text; other formats, sensitive files, and unclassified content are report-only. Original files remain in place, and conflicts never overwrite existing targets.
 
+### 3.1 已治理项目升级 / Governed-project upgrade
+
+`init --mode supplement` 只补缺失文件，不能升级已有治理合同。已存在
+`.project-governance.toml` 的项目使用 `upgrade`，默认行为就是只读预览：
+
+`init --mode supplement` only adds missing files; it does not upgrade an
+existing governance contract. Use `upgrade` for a project that already has
+`.project-governance.toml`. Its default behavior is a read-only preview:
+
+```powershell
+pgk upgrade --root C:\path\to\project --dry-run --json
+pgk upgrade --root C:\path\to\project --apply --json
+```
+
+JSON 报告包含 `from_version`、`to_version`、`changed`、逐文件 `changes`
+（含 diff 和前后哈希）、`unchanged`、`conflicts`、`dry_run` 与 `applied`。
+升级只处理版本化迁移中声明的 Agent 合同章节、WORKFLOW/约定章节、TASK/BUG/VER
+模板和生成视图；历史生命周期记录保持逐字节不变。项目修改过受管模板或章节、缺少
+生成标记、来源版本未知时，命令报告冲突且不写任何文件。
+同版本只修复生成视图时不会写一条虚假的升级活动；生成视图漂移通常使用
+`pgk index` 重建。
+
+A same-version generated-view refresh does not append a fictitious upgrade
+activity event. Normally regenerate stale views with `pgk index`.
+
+The JSON report includes the source and target versions, changed paths,
+per-file diffs and hashes, unchanged paths, conflicts, and application state.
+Historical lifecycle records are byte-for-byte untouched. A customized managed
+section/template, missing generated marker, or unknown source version blocks
+the complete write. Successful application uses same-directory atomic replaces,
+rolls back earlier writes if a later write fails, and updates `kit_version`
+only after the governed contract succeeds. Never update only `kit_version`.
+
 ## 4. 创建治理记录 / Create records
 
 记录 ID 必须使用安全前缀，例如 `REQ-`、`DES-`、`ADR-`、`TASK-`、`BUG-`、
@@ -196,13 +279,17 @@ pgk check --root .
 pgk doctor --root .
 ```
 
-`check` 检查治理基线、Markdown 本地链接、frontmatter、重复 ID、状态、STATUS 引用、
-Kit 版本一致性和当前 Git 分支状态。
+`check` 检查治理基线、Markdown 本地链接、frontmatter、重复 ID、状态、终态合同、
+声明文件、生成视图、STATUS 引用、Kit 版本一致性和当前 Git 分支状态。
 发现问题时返回退出码 `1`；命令错误或参数错误返回 `2`。
+文件范围重叠只对并行且正在执行/审查的任务报告；顺序任务共享文件不是冲突。
+
+File-scope overlap is diagnostic for active parallel work only. Sequential
+tasks may reuse shared files.
 
 `check` validates governance baselines, local Markdown links, frontmatter,
-duplicate IDs, statuses, STATUS references, Kit version consistency, and current
-Git branch state. It exits with `1` when issues are found and `2`
+duplicate IDs, statuses, terminal contracts, declared files, generated views,
+STATUS references, Kit version consistency, and current Git branch state. It exits with `1` when issues are found and `2`
 for command or runtime errors.
 
 面向 Agent 时使用稳定 JSON 输出：
@@ -229,7 +316,33 @@ pgk index --root . --dry-run --json
 Only an index containing `<!-- PGK_GENERATED: work-index -->` may be rewritten.
 Project-owned indexes are rejected and must be reviewed manually.
 
-## 6. 跨会话交接 / Cross-session handoff
+`--dry-run --json` 的 `changed` 数组列出会被刷新、当前已漂移的视图。
+
+The `changed` array from `--dry-run --json` lists views that currently differ
+and would be refreshed.
+
+## 6. 正式状态迁移 / Formal status transitions
+
+不要手工改 frontmatter 状态。先预览迁移，再正式执行：
+
+Do not edit frontmatter status by hand. Preview, then apply the transition:
+
+```powershell
+pgk transition TASK-001 in_review --root . --dry-run --json
+pgk transition TASK-001 in_review --root . --json
+```
+
+任务或 Bug 进入 `verified`/`done` 前必须带 terminal-v2 标记，以稳定 `AC-*`
+编号声明验收，并关联已验证的 VER。每个 AC 必须同时有验收结果和证据。Standard
+要求 VER；Strict 还要求已验证 Review。终态 `head_commit` 可以写实际哈希，或在包含
+该记录的单次收尾提交前写 `record-commit`。
+
+Before a task or bug enters `verified`/`done`, its terminal-v2 contract must use
+stable `AC-*` IDs and a reciprocal verified VER. Each AC needs both an outcome
+and evidence. Standard requires VER; Strict also requires a verified Review.
+Use an actual commit hash or `record-commit` for a single closing commit.
+
+## 7. 跨会话交接 / Cross-session handoff
 
 任务记录创建后，在暂停或交给其他 Agent 时更新交接区：
 
@@ -253,12 +366,10 @@ worktree state, verification summary, blockers, and next action; it does not
 capture full terminal output.
 
 注意：`handoff --status` 更新的是交接区中的状态文字，不会自动修改文件顶部
-frontmatter 的 `status`。需要改变正式记录状态时，应审查后手动修改 frontmatter，
-再运行 `pgk check`。
+frontmatter 的 `status`。正式状态使用 `pgk transition`。
 
 Note: `handoff --status` updates the status text inside the handoff block; it
-does not rewrite the frontmatter `status`. Change the formal record status
-intentionally, then run `pgk check`.
+does not rewrite the frontmatter `status`. Use `pgk transition` for formal state.
 
 预览交接修改而不写文件：
 
@@ -268,7 +379,7 @@ Preview a handoff without writing the record:
 pgk handoff TASK-001 --root . --next-action "review the plan" --dry-run --json
 ```
 
-## 7. Agent 推荐流程 / Recommended Agent flow
+## 8. Agent 推荐流程 / Recommended Agent flow
 
 ```text
 读取 AGENTS.md、docs/INDEX.md、docs/STATUS.md
@@ -283,7 +394,7 @@ pgk check --root . --json
         ↓
 运行项目自己的测试和构建命令
         ↓
-pgk handoff ... 或更新任务为 verified/done
+pgk transition ...；pgk handoff ...
         ↓
 提交 PR，链接任务记录
 ```
@@ -292,17 +403,17 @@ Read the repository rules and status, inspect the project, read the linked
 records, work on a task branch, validate, run the project's own tests, update
 the handoff, and link the record from the pull request.
 
-## 8. 安全边界 / Safety boundaries
+## 9. 安全边界 / Safety boundaries
 
 - `doctor`、`check` 和 `adopt` 默认只读；
-- `init`、`new`、`index`、`handoff` 支持 `--dry-run`；
+- `init`、`new`、`index`、`transition`、`handoff` 支持 `--dry-run`；`upgrade` 默认只读且只有 `--apply` 写入；
 - v0.1 不自动 commit、push、merge、删除或覆盖已有文档；
 - v0.1 不调用 GitHub API、模型提供商或其他网络服务；
 - 不要把密码、API Key、私有数据、完整模型载荷或思维链写入记录；
 - 生成的 Markdown/TOML 是项目普通文件，可脱离 `pgk` 独立维护。
 
 - `doctor`, `check`, and `adopt` are read-only by default;
-- `init`, `new`, `index`, and `handoff` support `--dry-run`;
+- `init`, `new`, `index`, `transition`, and `handoff` support `--dry-run`; `upgrade` previews by default and writes only with `--apply`;
 - v0.1 does not automatically commit, push, merge, delete, or overwrite documents;
 - v0.1 does not call GitHub APIs, model providers, or other network services;
 - never put passwords, API keys, private data, full model payloads, or chain-of-thought in records;

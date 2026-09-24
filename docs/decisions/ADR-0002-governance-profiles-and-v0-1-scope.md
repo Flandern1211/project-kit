@@ -3,7 +3,7 @@ id: ADR-0002
 type: decision
 status: accepted
 created: 2026-09-07
-updated: 2026-09-07
+updated: 2026-09-16
 related:
   - REQ-001-ZH
   - DES-002-ZH
@@ -50,8 +50,13 @@ related:
 
 ## Blockers
 
-无。并行协作和外部集成仍明确延期，不阻塞 v0.1 文档治理基础。
+无。未来路线图已由 ADR-0004 收口；本记录中的原延期表述保留为 2026-09-07 的历史决策。
 
 ## Next action
 
-按 TASK-006 完成文档同步并运行 `pgk check`；后续实现变更须创建新的已接受任务。
+按 ADR-0004 执行：只有并行 Agent/worktree 安全和受授权本地自动 commit 保留为后续扩展。
+
+## Amendment 2026-09-16
+
+[ADR-0004](ADR-0004-roadmap-scope.md) 在未来路线图范围上取代本记录的“后续可选扩展”
+概括；治理等级、协作模式分离和 v0.1 已实现范围继续有效。

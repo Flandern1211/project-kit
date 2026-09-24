@@ -1,0 +1,44 @@
+{
+  "skill_name": "project-governance-kit",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "请在 D:\\Experiments\\PocketLedger 创建一个新的个人记账项目，使用 Project Governance Kit 管理。项目以后用 Python，但现在先别写代码；你来处理初始化并和我确认需求。",
+      "expected_output": "识别为空目录新项目，预览并执行 PGK 初始化，读取生成的治理入口，创建 draft 需求记录；不执行 git init 或 commit，不创建设计、任务或业务代码，最后停在需求确认。",
+      "files": [],
+      "expectations": [
+        "将目标明确分类为新项目",
+        "在实际初始化前执行 dry-run 预览，并完成 PGK 初始化",
+        "创建且只创建 draft 需求记录，不创建设计、任务或业务代码",
+        "不执行 git init、commit、push 或其他受保护动作",
+        "最终响应停在需求确认，并给出唯一下一步"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "D:\\Projects\\legacy-orders 是一个已经开发两年的订单服务，里面有代码、Git 历史和散落的 PRD/设计文档。帮我接入 PGK，但先给我看方案，现有文件一个都别改。",
+      "expected_output": "识别为已有项目，只运行 adopt 和 doctor 等只读检查，汇总候选映射、缺失项、敏感项和 Git 状态；不运行 supplement、approve 或 apply，停在接入方案确认。",
+      "files": [],
+      "expectations": [
+        "将目标明确分类为尚未治理的已有项目",
+        "运行 adopt 和 doctor 只读检查并总结候选映射、缺失项、敏感项与 Git 状态",
+        "不运行 supplement、migrate approve 或 migrate apply",
+        "不修改已有代码和文档",
+        "最终响应停在接入方案确认，并给出唯一下一步"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "继续 D:\\Projects\\governed-api 里的工作。这个项目已经用 PGK 管理，STATUS 里有一个进行中的任务，请恢复上下文并按记录继续，不要重新初始化。",
+      "expected_output": "识别为已治理项目，按 AGENTS/INDEX/project-structure/STATUS/关联记录顺序恢复活动任务；不运行 init，不创建重复任务，并遵守该项目的验证和授权边界。",
+      "files": [],
+      "expectations": [
+        "将目标明确分类为已治理项目",
+        "读取 AGENTS、INDEX、project-structure、STATUS 和 TASK-001 以恢复上下文",
+        "不运行 pgk init，也不创建重复治理记录",
+        "准确报告 TASK-001 和项目中的唯一下一步",
+        "不执行任何受保护 Git 或远程动作"
+      ]
+    }
+  ]
+}

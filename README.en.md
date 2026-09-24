@@ -14,7 +14,9 @@ and provides offline validation.
 
 - initialize or inspect a project governance structure;
 - create requirement, design, decision, task, bug, and verification records;
-- validate document metadata, IDs, statuses, and local links;
+- validate formal status transitions, terminal acceptance contracts, metadata,
+  IDs, and local links;
+- safely preview and apply Kit contract upgrades to governed projects;
 - provide human-readable and JSON output for people and agents;
 - inspect Git branches, commits, and worktree state;
 - update a task's cross-session handoff section.
@@ -22,13 +24,21 @@ and provides offline validation.
 Governance profiles are `lite`, `standard`, and `strict`; they control the
 depth of documentation and checks. Collaboration mode is independent of the
 profile. v0.1 supports `single-agent` and `sequential-agents`; parallel Agent
-coordination is deferred.
+coordination is not yet implemented. The only planned extensions are safe
+parallel-Agent/worktree coordination and task-authorized local automatic
+commits.
 
 Governance visibility is independent and can be `team-private`, `hybrid`, or
 `public`. Teams should keep complete governance records in a private Git
 repository; public releases should use a reviewed sanitized copy or a separate
 public repository. The Kit does not change GitHub permissions or rewrite
 existing history.
+
+Web or hosted administration, model calls, complex-format conversion,
+semantic rewriting, Git-history cleanup, remote-permission management,
+automatic profile assessment, generic external-platform integration,
+automatic public-copy export, and automatic remote Git actions are product
+non-goals.
 
 GitHub Issues and pull requests remain discussion, review, and merge entry
 points. Repository Markdown is the durable source of truth.
@@ -45,7 +55,23 @@ python -m project_governance --help
 
 ## Usage
 
-From a new project root, initialize the governance files and validate them:
+The recommended path is to install the repository Agent Skill once, then talk
+only to Codex and let the Agent operate `pgk`. The Skill source is under
+`skills/project-governance-kit/`. After installing it into the Codex user
+skills directory, a typical request is:
+
+```text
+Create a new project at D:\Projects\PocketLedger with PGK. Initialize governance and discuss the requirements with me before writing business code.
+```
+
+The Agent classifies the target as new, existing, or already governed. New
+projects pause after a draft requirement; existing projects run read-only
+`adopt` and `doctor` before proposing changes; governed projects resume from
+STATUS and linked records, treats the target `AGENTS.md` as its execution contract, and uses `pgk transition` for formal status changes. When the Kit version differs, it previews `pgk upgrade` instead of editing only the configured version. The Skill does not authorize `git init`, commit,
+push, merge, or migration apply.
+
+The CLI remains available as a manual fallback. From a new project root,
+initialize the governance files and validate them:
 
 ```powershell
 pgk init --root . --project-name MyProject
@@ -80,10 +106,24 @@ pgk adopt --root C:\path\to\project --json
 pgk doctor --root C:\path\to\project
 ```
 
+For an already governed project, review the read-only Kit upgrade plan before
+applying it explicitly:
+
+```powershell
+pgk upgrade --root C:\path\to\project --dry-run --json
+pgk upgrade --root C:\path\to\project --apply --json
+```
+
+The upgrade changes only known Kit-managed sections, templates, and generated
+views. It preserves project sections and historical records, rejects the whole
+operation on a conflict or unknown source version, and updates `kit_version`
+last.
+
 Create a task and hand it between agents or sessions:
 
 ```powershell
 pgk new task TASK-001 "Implement feature" --root . --status in_progress --related REQ-001
+pgk transition TASK-001 in_review --root . --dry-run --json
 pgk handoff TASK-001 --root . --next-action "run integration tests" --verification "unit tests passed"
 pgk check --root . --json
 ```
@@ -92,6 +132,12 @@ pgk check --root . --json
 `review`, `verification`, and `migration`. Write commands support `--dry-run`, and agent callers can use
 `--json`. See the [usage guide](docs/usage.md) for complete arguments,
 statuses, and collaboration flow.
+
+Agent-first records:
+
+- [REQ-003-ZH](docs/requirements/2026-09-16-agent-first-project-entry-requirements.zh-CN.md)
+- [DES-004-ZH](docs/design/2026-09-16-agent-first-project-entry-design.zh-CN.md)
+- [VER-004](docs/verification/VER-004-agent-first-project-entry.md)
 
 Common commands:
 
@@ -102,17 +148,20 @@ pgk doctor     inspect project governance health
 pgk check      validate documents, links, and status
 pgk new        create a governance record
 pgk index      update the work index
+pgk transition validate and update formal record status
+pgk upgrade    preview or apply a governed-project Kit contract upgrade
 pgk handoff    update task handoff information
 pgk migrate    plan, approve, and apply existing-document migration
 ```
 
 ## Status
 
-The current version is the pre-release `0.2.0.dev0`. The toolkit repository
+The current version is the pre-release `0.2.0.dev1`. The toolkit repository
 dogfoods its own governance architecture, and TouzhiAgent is its first
 external trial project.
 
-v0.2 includes the existing-project supplement and document migration MVP:
+v0.2 includes existing-project supplement, the document migration MVP, and
+controlled Kit contract upgrades:
 
 ```powershell
 pgk init --root C:\path\to\project --mode supplement

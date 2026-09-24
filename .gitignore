@@ -14,3 +14,4 @@ htmlcov/
 .superpowers/
 .agent/
 .project-governance.local.toml
+skills/*-workspace/

@@ -15,8 +15,9 @@ from .checks import run_checks
 from .git_context import GitInspectionError, inspect_git
 from .handoff import preview_handoff, update_handoff
 from .migration import apply_migration, approve_migration, create_migration_plan, load_migration_plan, scan_project
-from .records import create_record, update_indexes, update_work_index
+from .records import create_record, expected_generated_views, transition_record, update_indexes, update_work_index
 from .scaffold import adopt_project, init_project
+from .upgrade import upgrade_project
 
 
 def _root(value: str) -> Path:
@@ -72,6 +73,19 @@ def _parser() -> argparse.ArgumentParser:
     index.add_argument("--root", default=".")
     index.add_argument("--dry-run", action="store_true")
     index.add_argument("--json", action="store_true")
+
+    transition = commands.add_parser("transition", help="apply a validated formal record status transition")
+    transition.add_argument("record_id")
+    transition.add_argument("status")
+    transition.add_argument("--root", default=".")
+    transition.add_argument("--dry-run", action="store_true")
+    transition.add_argument("--json", action="store_true")
+
+    upgrade = commands.add_parser("upgrade", help="preview or apply a governed-project Kit upgrade")
+    upgrade.add_argument("--root", default=".")
+    upgrade.add_argument("--apply", action="store_true", help="write the reviewed upgrade plan")
+    upgrade.add_argument("--dry-run", action="store_true", help="explicitly preview without writing")
+    upgrade.add_argument("--json", action="store_true")
 
     handoff = commands.add_parser("handoff", help="update a task handoff section")
     handoff.add_argument("task_id")
@@ -203,12 +217,39 @@ def main(argv: Sequence[str] | None = None) -> int:
             _emit({"path": path.relative_to(root).as_posix(), "id": args.record_id}, as_json=args.json)
             return 0
         if args.command == "index":
+            generated = expected_generated_views(root)
+            changed = sorted(
+                path.relative_to(root).as_posix()
+                for path, expected in generated.items()
+                if not path.exists() or path.read_text(encoding="utf-8").replace("\r\n", "\n") != expected.replace("\r\n", "\n")
+            )
             work_index = update_work_index(root, dry_run=args.dry_run)
             paths = update_indexes(root, dry_run=args.dry_run)
             relative_paths = sorted({path.relative_to(root).as_posix() for path in [work_index, *paths.values()]})
-            payload = {"paths": relative_paths, "path": "docs/work/INDEX.md", "dry_run": args.dry_run}
+            payload = {"paths": relative_paths, "changed": changed, "path": work_index.relative_to(root).as_posix(), "dry_run": args.dry_run}
             _emit(payload, as_json=args.json)
             return 0
+        if args.command == "transition":
+            path, previous, target = transition_record(
+                root, args.record_id, args.status, dry_run=args.dry_run
+            )
+            _emit(
+                {
+                    "path": path.relative_to(root).as_posix(),
+                    "id": args.record_id,
+                    "previous_status": previous.value,
+                    "status": target.value,
+                    "dry_run": args.dry_run,
+                },
+                as_json=args.json,
+            )
+            return 0
+        if args.command == "upgrade":
+            if args.apply and args.dry_run:
+                parser.error("upgrade --apply and --dry-run cannot be combined")
+            result = upgrade_project(root, apply=args.apply and not args.dry_run)
+            _emit(result.as_dict(), as_json=args.json)
+            return 0 if result.ok else 1
         if args.command == "handoff":
             path = update_handoff(
                 root,

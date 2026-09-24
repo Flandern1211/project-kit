@@ -24,3 +24,48 @@
 2026-09-08 | root | merge | TASK-012 | main@7ebef4c | relative-link repair merged locally; push not authorized
 2026-09-11T11:52:36+08:00 | pgk | create | TASK-014 | N/A | created
 2026-09-11 | root | verify | TASK-014 | task/TASK-014-document-consistency | 161 tests passed; wheel version 0.2.0.dev0; semantic checks passed
+2026-09-16 | root | accept-roadmap-scope | ADR-0004 | codex/task-015-roadmap-scope | only parallel-Agent/worktree safety and authorized local commit remain planned
+2026-09-16 | root | start-document-sync | TASK-015 | codex/task-015-roadmap-scope | reclassifying all other deferred candidates as product non-goals
+2026-09-16 | root | submit-review | TASK-015 | codex/task-015-roadmap-scope | indexes rebuilt; semantic checks found only expected dirty-worktree issues; diff-check passed
+2026-09-16 | user | authorize-commit | TASK-015 | codex/task-015-roadmap-scope | explicit authorization granted for the local task commit
+2026-09-16 | root | verify | TASK-015 | codex/task-015-roadmap-scope | roadmap narrowed to two extensions; indexes and diff-check passed; only pre-existing linked-worktree dirt remains
+2026-09-16 | user | accept-direction | REQ-003-ZH | codex/task-016-agent-first-entry | user approved Agent-first conversational operation of PGK
+2026-09-16 | root | start | TASK-016 | codex/task-016-agent-first-entry | drafting Codex Skill and new/existing/governed project evaluations
+2026-09-16 | user | approve-evals | TASK-016 | codex/task-016-agent-first-entry | approved three iteration-1 evaluation prompts
+2026-09-16 | root | benchmark | TASK-016 | codex/task-016-agent-first-entry | with-skill 15/15; baseline 12/15; static review page generated
+2026-09-17 | user | accept-evaluation | TASK-016 | codex/task-016-agent-first-entry | user approved iteration-1 behavior and requested continuation
+2026-09-17 | root | submit-review | VER-004 | codex/task-016-agent-first-entry | Skill valid; 164 tests passed; documentation synchronized
+2026-09-17 | user | authorize-install-and-commit | TASK-016 | codex/task-016-agent-first-entry | user authorized user-level Skill installation and the local task commit
+2026-09-17 | root | install-skill | TASK-016 | %USERPROFILE%/.codex/skills/project-governance-kit | installed copy passed Codex quick validation
+2026-09-17 | root | verify | TASK-016 | codex/task-016-agent-first-entry | task verified and prepared for final local commit
+2026-09-17 | user | request-five-element-contract | TASK-017 | codex/task-017-skill-five-elements | requested explicit trigger, input, workflow, output, and acceptance sections
+2026-09-17 | root | start | TASK-017 | codex/task-017-skill-five-elements | restructuring runtime Skill contract without changing verified behavior
+2026-09-17 | root | sync-installed-skill | TASK-017 | %USERPROFILE%/.codex/skills/project-governance-kit | repository and installed copies match and pass quick validation
+2026-09-17 | root | submit-review | VER-005 | codex/task-017-skill-five-elements | five-element contract verified; checker regression 31 passed
+2026-09-17 | root | localize-skill | TASK-017 | codex/task-017-skill-five-elements | Chinese runtime instructions and UI prompt synchronized to installed Skill
+2026-09-17 | root | restore-description | TASK-017 | codex/task-017-skill-five-elements | restored the user-approved concise 82-character trigger description
+2026-09-17 | user | authorize-publish | TASK-017 | codex/task-017-skill-five-elements | user requested publishing the finalized Skill to Flandern1211/skills
+2026-09-17 | root | verify | TASK-017 | codex/task-017-skill-five-elements | Chinese five-element Skill and installed copy validated and ready for commit
+2026-09-17 | user | authorize-github-publish | TASK-018 | codex/task-018-publish-skill | authorized publishing the Skill to Flandern1211/skills
+2026-09-17 | root | start | TASK-018 | codex/task-018-publish-skill | target repository and publication conventions verified
+2026-09-17 | root | push | TASK-018 | Flandern1211/skills:feat/project-governance-kit@db52494 | validated Skill branch pushed after syncing main@8c0f186
+2026-09-17 | root | create-pull-request | TASK-018 | https://github.com/Flandern1211/skills/pull/1 | PR open and mergeable/clean; no CI checks configured
+2026-09-22T09:29:17+08:00 | pgk | create | TASK-019 | N/A | created
+2026-09-22T11:53:50+08:00 | pgk | create | REVIEW-002 | N/A | created
+2026-09-22T11:53:50+08:00 | pgk | create | VER-006 | N/A | created
+2026-09-22T12:40:23+08:00 | pgk | transition | VER-006 | N/A | draft->verified
+2026-09-22T12:40:47+08:00 | pgk | transition | REVIEW-002 | N/A | in_review->verified
+2026-09-22T12:43:39+08:00 | pgk | transition | TASK-019 | N/A | in_progress->in_review
+2026-09-22T12:43:54+08:00 | pgk | transition | TASK-019 | N/A | in_review->verified
+2026-09-22T15:12:56+08:00 | pgk | transition | TASK-019 | N/A | verified->in_progress
+2026-09-22T15:12:58+08:00 | pgk | transition | VER-006 | N/A | verified->in_review
+2026-09-22T15:12:59+08:00 | pgk | transition | REVIEW-002 | N/A | verified->in_review
+2026-09-22T16:23:56+08:00 | pgk | transition | VER-006 | N/A | in_review->verified
+2026-09-22T16:24:15+08:00 | pgk | transition | REVIEW-002 | N/A | in_review->verified
+2026-09-22T16:28:31+08:00 | pgk | transition | TASK-019 | N/A | in_progress->in_review
+2026-09-22T16:28:32+08:00 | pgk | transition | TASK-019 | N/A | in_review->verified
+2026-09-23T11:53:45+08:00 | pgk | create | TASK-020 | N/A | created
+2026-09-23T11:53:45+08:00 | pgk | create | VER-007 | N/A | created
+2026-09-23T11:59:18+08:00 | pgk | transition | TASK-020 | N/A | draft->in_progress
+2026-09-23T11:59:18+08:00 | pgk | transition | VER-007 | N/A | draft->in_review
+2026-09-23T12:10:57+08:00 | pgk | transition | TASK-020 | N/A | in_progress->in_review

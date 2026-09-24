@@ -11,6 +11,14 @@ governance documents from project business content.
 The `templates/` package data is copied into target projects by `pgk init` and
 `pgk new`; the CLI never becomes a runtime dependency of business code.
 
+## Agent skills
+
+`skills/<name>/SKILL.md` contains repository-distributed Agent entry skills.
+Skill frontmatter is validated separately from lifecycle records and does not
+add a RecordType. Optional `evals/` content holds repeatable skill behavior
+tests, while `agents/openai.yaml` supplies Codex UI metadata. Generated
+evaluation workspaces and packages stay outside source control.
+
 ## Root files
 
 - `AGENTS.md`: Agent contract and architecture limits; read it before acting.

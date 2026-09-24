@@ -4,15 +4,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+import os
 import re
 import subprocess
 import tomllib
 
 from .authorization import _authorization_fields, _when
 from .config import default_visibility_dirs, load_config
+from .contracts import record_contract_issues
 from .frontmatter import FrontmatterError, parse_frontmatter
 from .git_context import GitInspectionError, inspect_git
 from .migration import _normalize_generated, _render_governance_copy, load_migration_plan
+from .records import expected_generated_views
 from .scaffold import required_artifacts_for_profile
 from .version import __version__
 
@@ -62,6 +65,50 @@ class CheckResult:
 
 def _issue(issues: list[dict[str, str]], code: str, path: str, message: str) -> None:
     issues.append({"code": code, "path": path, "message": message})
+
+
+def _is_skill_document(relative: str) -> bool:
+    return bool(re.fullmatch(r"skills/[^/]+/SKILL\.md", relative))
+
+
+def _markdown_files(root: Path, ignored_dirs: set[str]) -> list[Path]:
+    """Collect Markdown while pruning directories that governance never scans."""
+
+    files: list[Path] = []
+    for current, dirnames, filenames in os.walk(root):
+        current_path = Path(current)
+        relative_parts = current_path.relative_to(root).parts
+        dirnames[:] = sorted(
+            dirname
+            for dirname in dirnames
+            if dirname not in ignored_dirs
+            and not dirname.startswith(".pytest-tmp")
+            and not (relative_parts == ("skills",) and dirname.endswith("-workspace"))
+        )
+        files.extend(current_path / filename for filename in filenames if filename.endswith(".md"))
+    return sorted(files)
+
+
+def _check_skill_document(relative: str, text: str, issues: list[dict[str, str]]) -> str:
+    """Validate Agent Skill metadata without treating it as a lifecycle record."""
+
+    match = re.match(r"\A---\s*\n(.*?)\n---\s*\n?", text, re.S)
+    if not match:
+        _issue(issues, "invalid_skill_frontmatter", relative, "SKILL.md requires YAML frontmatter")
+        return text
+    fields: dict[str, str] = {}
+    for line in match.group(1).splitlines():
+        if not line.strip() or line.lstrip().startswith("#") or ":" not in line:
+            continue
+        key, value = line.split(":", 1)
+        fields[key.strip()] = value.strip().strip("\"'")
+    missing = [field for field in ("name", "description") if not fields.get(field)]
+    if missing:
+        _issue(issues, "invalid_skill_frontmatter", relative, "skill metadata missing: " + ", ".join(missing))
+    expected_name = Path(relative).parent.name
+    if fields.get("name") and fields["name"] != expected_name:
+        _issue(issues, "invalid_skill_frontmatter", relative, f"skill name {fields['name']} does not match directory {expected_name}")
+    return text[match.end():]
 
 def _body_sections(body: str) -> dict[str, str]:
     matches = list(re.finditer(r"(?im)^##\s+([^\n]+)\s*$", body))
@@ -244,12 +291,14 @@ def run_checks(root: str | Path) -> CheckResult:
     _check_project_version(root, issues)
     profile = "standard"
     visibility = "public"
+    collaboration_mode = "single-agent"
     governance_dir = Path("docs")
     public_docs_dir = Path("docs")
     try:
         config = load_config(root / ".project-governance.toml")
         profile = config.profile
         visibility = config.visibility
+        collaboration_mode = config.collaboration_mode
         governance_dir = Path(config.governance_dir)
         public_docs_dir = Path(config.public_docs_dir)
     except (OSError, ValueError) as exc:
@@ -268,7 +317,7 @@ def run_checks(root: str | Path) -> CheckResult:
         f"{governance_dir.as_posix().rstrip('/')}/{suffix}/"
         for suffix in ("risk", "security", "releases", "operations/runbooks", "operations/incidents", "operations/postmortems")
     )
-    files = sorted(path for path in root.rglob("*.md") if not any(part in ignored_dirs or part.startswith(".pytest-tmp") for part in path.relative_to(root).parts))
+    files = _markdown_files(root, ignored_dirs)
     checked_files = tuple(path.relative_to(root).as_posix() for path in files)
     if visibility != "public":
         public_root = root / public_docs_dir
@@ -291,7 +340,9 @@ def run_checks(root: str | Path) -> CheckResult:
     for path in files:
         relative = path.relative_to(root).as_posix(); text = path.read_text(encoding="utf-8"); metadata = None; body = text
         strict_control_document = profile == "strict" and any(relative.startswith(prefix) for prefix in strict_control_prefixes)
-        if strict_control_document and text.startswith("---"):
+        if _is_skill_document(relative):
+            body = _check_skill_document(relative, text, issues)
+        elif strict_control_document and text.startswith("---"):
             _issue(issues, "unsupported_control_record_type", relative, "Strict control documents are ordinary Markdown; remove lifecycle frontmatter and do not add a new RecordType")
         elif text.startswith("---"):
             try: metadata, body = parse_frontmatter(text)
@@ -373,6 +424,15 @@ def run_checks(root: str | Path) -> CheckResult:
             for record_path, metadata, _body, _text in records:
                 if metadata.type.value == kind and not re.search(rf"\[{re.escape(metadata.id)}\]\(", content): _issue(issues, "unindexed_record", record_path, f"record is not linked from {relative}: {metadata.id}")
     record_by_id = {metadata.id: (relative, metadata) for relative, metadata, _body, _text in records}
+    contract_records = {
+        metadata.id: (relative, metadata, body)
+        for relative, metadata, body, _text in records
+    }
+    for relative, metadata, body, _text in records:
+        for issue in record_contract_issues(
+            root, relative, metadata, body, contract_records, profile=profile
+        ):
+            _issue(issues, issue.code, relative, issue.message)
     for relative, metadata, _body, _text in records:
         for related in metadata.related:
             if RECORD_ID_RE.fullmatch(related) and related not in record_by_id:
@@ -450,7 +510,7 @@ def run_checks(root: str | Path) -> CheckResult:
             marker = f"{kind}-index"
             view_path = root / relative
             if view_path.exists() and f"<!-- PGK_GENERATED: {marker} -->" not in view_path.read_text(encoding="utf-8"):
-                _issue(issues, "invalid_view_marker", view, "record index is missing PGK_GENERATED marker")
+                _issue(issues, "invalid_view_marker", relative, "record index is missing PGK_GENERATED marker")
         work_index = root / governance_dir / "work/INDEX.md"
         if work_index.exists() and "<!-- PGK_GENERATED: work-index -->" not in work_index.read_text(encoding="utf-8"):
                 _issue(issues, "invalid_view_marker", (governance_dir / "work/INDEX.md").as_posix(), "work index is missing PGK_GENERATED marker")
@@ -467,6 +527,20 @@ def run_checks(root: str | Path) -> CheckResult:
                 _issue(issues, "invalid_board_contract", (governance_dir / "work/BOARD.md").as_posix(), "board header is invalid")
         if activity_view.exists() and "<!-- timestamp | actor | action | record_id | git_ref | result -->" not in activity_view.read_text(encoding="utf-8"):
                 _issue(issues, "invalid_activity_header", (governance_dir / "activity/ACTIVITY.md").as_posix(), "activity header is invalid")
+        try:
+            for view_path, expected in expected_generated_views(root).items():
+                if not view_path.exists():
+                    continue
+                actual = view_path.read_text(encoding="utf-8").replace("\r\n", "\n")
+                if actual != expected.replace("\r\n", "\n"):
+                    _issue(
+                        issues,
+                        "stale_generated_view",
+                        view_path.relative_to(root).as_posix(),
+                        "generated view differs from current records; run pgk index",
+                    )
+        except (OSError, ValueError) as exc:
+            _issue(issues, "generated_view_unreadable", governance_dir.as_posix(), f"cannot render generated views: {exc}")
     activity = root / governance_dir / "activity/ACTIVITY.md"
     if activity.exists():
         for number, line in enumerate(activity.read_text(encoding="utf-8").splitlines(), 1):
@@ -475,12 +549,13 @@ def run_checks(root: str | Path) -> CheckResult:
             if len(fields) != 6 or any(not field.strip() for field in fields) or not re.match(r"^\d{4}-\d{2}-\d{2}(?:T|$)", fields[0].strip()):
                 _issue(issues, "invalid_activity_line", (governance_dir / "activity/ACTIVITY.md").as_posix(), f"line {number} must have six fields")
     scopes: list[tuple[str, str, str]] = []; declared_branches: set[str] = set()
-    active_records = {"in_progress", "in_review", "blocked"}
+    parallel_scope_check = collaboration_mode == "parallel-agents"
+    active_records = {"in_progress", "in_review"}
     for relative, metadata, body, _text in records:
         if metadata.type.value not in {"task", "bug"}: continue
         branch = _declared_branch(body)
         if branch: declared_branches.add(branch)
-        if metadata.status.value not in active_records: continue
+        if not parallel_scope_check or metadata.status.value not in active_records: continue
         scopes.extend((scope, metadata.id, relative) for scope in _scope_values(body))
     for index, (scope, record_id, relative) in enumerate(scopes):
         for other_scope, other_id, other_relative in scopes[index + 1:]:
@@ -501,7 +576,8 @@ def run_checks(root: str | Path) -> CheckResult:
     if git is not None and same_repository:
         if git.dirty: _issue(issues, "dirty_worktree", ".git", "Git worktree has uncommitted changes")
         for worktree in git.worktrees:
-            if worktree.get("dirty") == "true": _issue(issues, "dirty_worktree", worktree.get("path", ".git"), "linked Git worktree has uncommitted changes")
+            if worktree.get("dirty") == "true" and Path(worktree.get("path", ".git")).resolve() != root.resolve():
+                _issue(issues, "dirty_worktree", worktree.get("path", ".git"), "linked Git worktree has uncommitted changes")
         try: branches = subprocess.run(["git", "branch", "--no-merged", "HEAD", "--format=%(refname:short)"], cwd=root, check=True, capture_output=True, text=True).stdout.splitlines()
         except (OSError, subprocess.CalledProcessError): branches = []
         if git.branch not in {"detached", "unborn", "unavailable"}:

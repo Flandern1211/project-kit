@@ -5,7 +5,7 @@ The index is generated from task and bug records.
 
 ## Active
 
-No records yet.
+- [TASK-020](tasks/TASK-020-correct-sequential-scope-checks-and-upgrade-idempotence.md) — in_review
 
 ## Planned
 
@@ -27,6 +27,11 @@ No records yet.
 - [TASK-011](tasks/TASK-011-implement-v0-2-existing-project-migration.md) — verified
 - [TASK-012](tasks/TASK-012-fix-migration-relative-links.md) — verified
 - [TASK-014](tasks/TASK-014-document-consistency-and-drift-checks.md) — verified
+- [TASK-015](tasks/TASK-015-narrow-future-roadmap.md) — verified
+- [TASK-016](tasks/TASK-016-agent-first-project-entry.md) — verified
+- [TASK-017](tasks/TASK-017-explicit-skill-five-element-contract.md) — verified
+- [TASK-018](tasks/TASK-018-publish-skill-to-github.md) — verified
+- [TASK-019](tasks/TASK-019-enforce-terminal-governance-gates.md) — verified
 
 ## Bugs
 

@@ -66,11 +66,12 @@ Lite/Standard/Strict 的运行时 profile 行为和协作模式配置仍需后�
 
 ## Next action
 
-TASK-006 已验证；profile 运行时行为由后续 TASK-007 实现，并行协作仍属延期范围。
+TASK-006 已验证；profile 运行时行为由 TASK-007 实现。未来范围现由 ADR-0004 管理，
+本任务中的延期描述仅是 2026-09-07 的历史快照。
 
 ## Git
 
 branch: N/A
 worktree: N/A
 base_commit: N/A
-head_commit: N/A
+head_commit: f4d81c9

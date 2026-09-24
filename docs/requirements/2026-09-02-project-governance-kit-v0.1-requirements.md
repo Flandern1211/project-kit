@@ -3,7 +3,7 @@ id: REQ-001
 type: requirement
 status: accepted
 created: 2026-09-02
-updated: 2026-09-07
+updated: 2026-09-16
 related:
   - REQ-001-ZH
 ---
@@ -65,8 +65,14 @@ scope locking, and automatic merging are deferred extensions, not v0.1 core.
 - Collaboration mode is independent of the profile: `single-agent`,
   `sequential-agents`, or `parallel-agents`.
 - v0.1 implements only `single-agent` and `sequential-agents`.
-- GitHub/Issue, web administration, model calls, and automatic
-  commit/push/PR/release are optional future extensions.
+- The only planned extensions are safe parallel-Agent/worktree coordination
+  and task-authorized local automatic commits.
+- Web administration, hosted collaboration, model-provider calls, complex
+  format conversion, semantic rewriting, Git-history cleanup, remote
+  permission changes, automatic profile assessment, generic external-platform
+  integrations, automatic public-copy export, and automatic
+  push/PR/merge/tag/release are product non-goals rather than deferred roadmap
+  items.
 - An Agent may propose profile or module changes but may not change governance
   silently. A governance change requires a proposal, impact analysis, user
   confirmation, and history preservation.
@@ -78,7 +84,8 @@ scope locking, and automatic merging are deferred extensions, not v0.1 core.
   sanitized copy or a separate public repository.
 - [ADR-0002](../decisions/ADR-0002-governance-profiles-and-v0-1-scope.md)
   records this revision and takes precedence over the older parallel-work
-  wording.
+  wording. [ADR-0004](../decisions/ADR-0004-roadmap-scope.md) narrows the
+  future roadmap.
 
 ## 3. Initialization output
 
@@ -254,8 +261,8 @@ the Kit does not claim to block every external command.
 - Default feature branch: `task/<TASK-ID>-<slug>`; default bug branch:
   `bug/<BUG-ID>-<slug>`. Prefixes are project-configurable.
 - v0.1 serial single-Agent development uses a task branch and does not require
-  another worktree. Parallel-Agent worktrees, file-scope locking, and conflict
-  coordination are deferred extensions.
+  another worktree. Safe parallel-Agent worktrees, file scopes, and conflict
+  preflight are planned extensions; automatic merging is a product non-goal.
 - A task records applicable `branch`, `owner`, and `files`; `worktree` is
   reserved for the future parallel extension.
 - Non-implementation records may use `N/A` or an upstream reference for
@@ -422,8 +429,8 @@ authorization state, and next action from project documents and Git state.
   merge, or remote operations by default.
 - Without Git, the Agent obtains user confirmation before running `git init`.
 - An accepted task may create a local branch. v0.1 serial development does not
-  require another worktree; parallel development and worktree coordination are
-  deferred.
+  require another worktree; safe parallel development and worktree management
+  are planned extensions.
 - Governance profiles are Lite, Standard, and Strict. Collaboration mode is
   independent and v0.1 supports only single-agent and sequential-agents.
 - An Agent may propose governance changes but needs user confirmation before

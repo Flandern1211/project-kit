@@ -87,6 +87,7 @@ def test_cli_index_json_refreshes_all_generated_views(tmp_path: Path, capsys):
         "docs/work/tasks/INDEX.md", "docs/work/bugs/INDEX.md", "docs/reviews/INDEX.md",
         "docs/verification/INDEX.md", "docs/migrations/INDEX.md", "docs/work/BOARD.md", "docs/work/INDEX.md",
     }
+    assert result["changed"] == []
 
 
 def test_cli_check_and_doctor_json_include_governance_and_authorization(tmp_path: Path, capsys):
@@ -112,7 +113,7 @@ def test_cli_check_reports_version_drift_in_json(tmp_path: Path, capsys):
     )
     (tmp_path / ".project-governance.toml").write_text(
         (tmp_path / ".project-governance.toml").read_text(encoding="utf-8").replace(
-            'kit_version = "0.2.0.dev0"', 'kit_version = "0.1.0.dev0"'
+            'kit_version = "0.2.0.dev1"', 'kit_version = "0.1.0.dev0"'
         ),
         encoding="utf-8",
     )

@@ -3,4 +3,5 @@
 
 The index is generated from records.
 
-No records yet.
+- [REVIEW-001](REVIEW-001-agent-first-project-entry.md) — verified
+- [REVIEW-002](REVIEW-002-terminal-gate-review.md) — verified

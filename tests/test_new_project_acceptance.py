@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -34,7 +35,7 @@ def test_fresh_project_cli_creates_and_indexes_complete_record_chain(tmp_path: P
     target = tmp_path / "sample-project"
     shutil.copytree(FIXTURE, target)
     monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path))
-    env = dict(**__import__("os").environ, PYTHONPATH=str(Path(__file__).parents[1] / "src"))
+    env = {**os.environ, "PYTHONPATH": str(Path(__file__).parents[1] / "src")}
 
     init = subprocess.run(
         [sys.executable, "-m", "project_governance", "init", "--root", str(target), "--json"],

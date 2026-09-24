@@ -3,7 +3,7 @@ id: DES-002-ZH
 type: design
 status: accepted
 created: 2026-09-04
-updated: 2026-09-07
+updated: 2026-09-22
 related:
   - REQ-001-ZH
   - REQ-001
@@ -26,13 +26,15 @@ v0.1 使用 Python 3.11+ 标准库。核心 CLI 只负责本地文件和只读 G
 - 治理等级为 Lite、Standard、Strict，只控制文档和检查深度；
 - 协作模式独立于治理等级，分为 `single-agent`、`sequential-agents` 和
   `parallel-agents`；
-- v0.1 只实现单 Agent 和跨会话顺序交接；并行 Agent、worktree 协调、文件范围
-  锁定和自动合并延期；
+- v0.1 只实现单 Agent 和跨会话顺序交接；后续只规划并行 Agent 协作安全、
+  worktree 生命周期、文件范围和冲突预检，不规划自动合并；
 - Agent 可以生成治理变更提案，但治理配置只有在用户确认后才能修改；
-- GitHub/Issue、Web、模型调用和自动公开操作是后续可选扩展。
+- 另一个后续扩展是经任务级明确授权的本地自动 commit；Web、模型调用、通用外部
+  平台集成和自动公开操作均为产品非目标。
 
 本节由 [ADR-0002](../decisions/ADR-0002-governance-profiles-and-v0-1-scope.md)
-记录，优先于旧版并行协作表述。
+记录，优先于旧版并行协作表述；未来路线图由
+[ADR-0004](../decisions/ADR-0004-roadmap-scope.md) 收口。
 
 ### 1.2 治理记录可见性（2026-09-07）
 
@@ -132,6 +134,26 @@ Bug：BUG → CODE/TEST → REVIEW → VERIFICATION
 `done`、`rejected`、`superseded`。项目阶段描述全局位置，记录状态描述单条记录，
 多个任务、Bug 和 worktree 可以并行。
 
+### 4.1 确定性状态迁移与终态合同（2026-09-22 修订）
+
+正式状态通过 `pgk transition <ID> <status>` 更新。`lifecycle` 按记录类型声明可用状态和合法迁移；命令在写入前完成门禁检查，并同步重建生成视图、追加活动记录。`pgk check` 仍保留只读检查，因此手工编辑或外部工具造成的非法状态也会被发现。
+
+新建 TASK、BUG 和 VER 使用 `<!-- PGK_CONTRACT: terminal-v2 -->` 标记。TASK/BUG 的每条验收标准使用稳定 `AC-*` ID；终态要求已接受的上游记录、存在的字面文件路径、可追踪的 Git 提交，以及 reciprocal 终态 VER 中同 ID 的结果和证据。Lite 与 Standard 要求 VER；Strict 还要求 reciprocal 终态 REVIEW。实际提交哈希必须存在于当前仓库；当任务记录和收尾代码位于同一次提交时，可先写 `record-commit`，提交前由该记录的修改状态解析，提交后由包含该记录的最近提交解析。
+
+没有 terminal-v2 标记的历史记录继续可读和可检查，不要求全库迁移；只有它们再次通过正式命令进入 TASK/BUG/VER 终态时才需要升级合同。该兼容策略不提升仓库 schema 版本。Kit 只判断结构、引用、文件、状态和 Git 等确定事实；未执行的人工验收、外部运行效果、性能或业务含义由 `AGENTS.md` 约束 Agent，不由核心 CLI 猜测。
+
+### 4.2 受控 Kit 升级（2026-09-22 修订）
+
+已治理项目通过 `pgk upgrade` 获取新版 Kit 合同。命令默认只生成升级提案，列出来源版本、
+目标版本、逐文件变更、未变更项和冲突；只有显式 `--apply` 才写入。升级使用版本化迁移，
+只修改 Kit 管理的段落、模板和生成视图，保留项目自定义段落和历史生命周期记录。缺少受管
+标记、模板已自定义、版本路径未知或任何文件无法安全合并时，升级整体拒绝，不更新
+`kit_version`。写入使用同目录临时文件替换；发生失败时回滚本次已写文件，配置版本最后更新。
+
+v0.2.0.dev0 到 v0.2.0.dev1 的迁移更新 Agent 终态协议、WORKFLOW、项目约定、TASK/BUG/VER
+模板和生成视图。旧记录保持 legacy 合同，新建记录使用 terminal-v2。核心 Kit 不下载版本、
+不调用远程服务，也不运行项目业务迁移。
+
 ## 5. Agent 工作协议
 
 开始任何治理动作时，Agent 按顺序读取 `AGENTS.md`、`docs/INDEX.md`、`docs/STATUS.md`、
@@ -149,7 +171,7 @@ Kit 通过生成的 `AGENTS.md`、模板和 `pgk check` 提供规则与违规报
 
 单 Agent 使用 `task/<TASK-ID>-<slug>` 或 `bug/<BUG-ID>-<slug>` 分支；v0.1 不要求额外
 worktree。并行 Agent 使用 `.worktrees/<TASK-ID>` 或 `.worktrees/<BUG-ID>`、文件范围
-冲突检查和自动协调均为后续扩展。任务记录仍可预留 `branch`、`worktree`、`owner`、
+和冲突预检属于已规划扩展；自动协调和自动合并不是产品目标。任务记录仍可预留 `branch`、`worktree`、`owner`、
 `files`、`base_commit` 和 `head_commit` 字段。
 
 以下动作默认逐次需要用户明确确认：commit、push、Issue 创建/更新/关闭/回复、PR/MR
@@ -170,7 +192,7 @@ branch/worktree、verification、blocker、next。
 `timestamp | actor | action | record_id | git_ref | result` 记录重要节点。
 
 Kit 生成的视图使用 `<!-- PGK_GENERATED: ... -->` 标记；只有带标记的视图可以自动更新，
-项目自有未标记文件必须人工审查合并。
+项目自有未标记文件必须人工审查合并。`pgk check` 将当前记录重新渲染为规范内容并与 INDEX/BOARD 逐字比较；差异报告为 `stale_generated_view`，由 `pgk index` 修复。
 
 ## 8. 模块和验证
 
@@ -186,8 +208,9 @@ Kit 生成的视图使用 `<!-- PGK_GENERATED: ... -->` 标记；只有带标记
 ### 8.1 v0.1 实现边界
 
 v0.1 的核心是初始化、文档链、状态/索引、任务和验证记录、跨会话交接以及用户授权
-边界。多 Agent 并行调度、远程平台、Web 管理后台、模型调用和自动公开操作不属于
-本版实现目标；治理等级的完整自动评估也延后，Agent 只需能够读取配置并提出变更提案。
+边界。后续只规划并行 Agent 协作安全/worktree 管理和受授权本地自动 commit。
+远程平台自动化、Web 管理后台、模型调用、复杂格式转换、语义改写、历史清理、自动
+治理等级评估和自动公开操作是产品非目标；Agent 仍只需读取治理等级配置并提出变更提案。
 
 ## 9. 需求覆盖
 

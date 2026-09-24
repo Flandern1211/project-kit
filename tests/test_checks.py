@@ -26,7 +26,7 @@ def test_checks_report_project_version_drift(tmp_path):
 
     init_project(tmp_path)
     (tmp_path / "pyproject.toml").write_text(
-        '[project]\nname = "project-governance-kit"\nversion = "0.2.0.dev0"\n',
+        '[project]\nname = "project-governance-kit"\nversion = "0.2.0.dev1"\n',
         encoding="utf-8",
     )
     (tmp_path / ".project-governance.toml").write_text(

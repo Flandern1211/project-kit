@@ -38,7 +38,13 @@ Do not create new governance directories, records, statuses, or business modules
 - `docs/work/INDEX.md` and `docs/work/BOARD.md`: generated task/bug navigation and board; update source records, then regenerate indexes.
 
 ## State gates
-Requirements are drafts until user confirmation. Before implementation require an accepted requirement, applicable design/ADR, and TASK/BUG with owner and scope. Keep STATUS, user-facing documentation, configuration, and behavior synchronized in the same change chain. Complete records and code, run semantic checks, fill evidence, commit once, run read-only clean-tree checks. Do not edit the repository after the clean-tree check. Put post-commit output in the external experiment report or handoff.
+Requirements are drafts until user confirmation. Before implementation require an accepted requirement, applicable design/ADR, and TASK/BUG with owner, scope, files, and stable `AC-*` acceptance identifiers. Use `pgk transition` for formal status changes. Batch implementation authorization does not waive any task acceptance criterion. For an already governed project, preview `pgk upgrade` and apply the reviewed plan; never change only `kit_version`.
+
+## Task execution and closure
+Work and verify one task or bug contract at a time, even when several records are implemented in one session. Before a terminal transition, map every `AC-*` item to the reciprocal VER record's Acceptance and Evidence sections. A passing aggregate test suite proves only the criteria it actually covers. If any criterion is missing, contradicted, deferred, uncalibrated, or dependent on unperformed human/external validation, keep the record non-terminal or mark it blocked. Update source records rather than generated views, run `pgk index`, then run `pgk check` and project tests.
+
+Keep STATUS, user-facing documentation, configuration, and behavior synchronized in the same change chain. Use `head_commit: record-commit` when the task-closing commit contains the task record itself; do not write predictions such as `pending-local-commit` into terminal records. Avoid transient commit/push claims in current-state documents. After the authorized commit, run read-only clean-tree checks and put exact post-commit output in the external report or handoff.
+Do not edit the repository after the clean-tree check.
 
 ## Handoff
 Record completed and remaining work, branch, HEAD, workspace status, uncommitted changes, blockers, verification, and one next action.
@@ -132,13 +138,22 @@ blocked --> active_development: resolve blocker and resume
 blocked --> requirements_review: revise requirements
 ```
 
+## Record lifecycle
+
+Use `pgk transition <ID> <status>` for formal status changes. Tasks and bugs
+normally move through `draft/accepted -> in_progress -> in_review -> verified
+-> done`; `blocked` returns to `in_progress`. A terminal transition requires
+the deterministic terminal contract and reciprocal verification evidence.
+
 ## Two-phase finalization
 
 1. Complete all records, source files, tests, and documentation. Synchronize
    STATUS, user-facing documentation, and version configuration with behavior.
 2. Run semantic checks while changes are uncommitted.
-3. Fill final evidence and terminal statuses.
-4. Commit the complete task branch once.
+3. Fill final evidence, set `head_commit: record-commit`, and apply terminal
+   status with `pgk transition`.
+4. Commit the complete task branch once; avoid transient commit/push claims in
+   STATUS and terminal records.
 5. Run read-only clean-tree `pgk check` and `pgk doctor`.
 6. Do not edit the repository after the clean-tree check. Store post-commit
    output in the external experiment report or handoff.
@@ -153,8 +168,10 @@ The supported lifecycle RecordTypes are `requirement`, `design`, `decision`,
 frontmatter with `id`, `type`, `status`, `created`, and `updated`.
 
 The lifecycle statuses are `draft`, `accepted`, `in_progress`, `in_review`,
-`blocked`, `verified`, `done`, `rejected`, and `superseded`. A record may move to `verified` only when
-its verification section names the evidence used.
+`blocked`, `verified`, `done`, `rejected`, and `superseded`. Record types have
+different legal transitions; use `pgk transition` rather than editing formal
+status by hand. A task or bug may move to a terminal state only when its
+terminal-v2 contract and reciprocal verification pass deterministic checks. Legacy records without the marker remain readable and are upgraded only before a new formal terminal transition.
 
 Strict risk, security, release, runbook, incident, and postmortem documents are
 ordinary Markdown. Do not add lifecycle frontmatter or invent a RecordType for
@@ -176,6 +193,10 @@ silently modify the implementer's branch.
 Verification must name the command or inspection evidence used. A passing test
 suite does not by itself prove external services, deployment, performance, or
 long-running behavior.
+New task, bug, and verification records use stable `AC-*` identifiers. Every
+terminal acceptance ID must have both an outcome and evidence in the reciprocal
+verification record. Lite and Standard require verification; Strict also
+requires a terminal review.
 
 ## Documentation consistency
 
@@ -185,11 +206,20 @@ configuration in the same change chain. Historical verification keeps the
 evidence captured at that time; current-state documents must not repeat an
 obsolete branch, version, blocker, or implementation status.
 
+## Kit upgrades
+
+For an already governed project, run `pgk upgrade --dry-run --json` before
+adopting a newer Kit contract. Review every file and conflict, then use
+`pgk upgrade --apply`; never change only `kit_version`. The upgrade preserves
+historical records and project-owned sections, and advances configuration only
+after all managed contract files are written successfully.
+
 ## Two-phase finalization
 
-Complete records and code, run semantic checks, fill evidence, commit once, run
-read-only clean-tree checks, and do not edit the repository after the clean-tree
-check. Post-commit output belongs in the external experiment report or handoff.
+Complete records and code, run semantic checks, fill evidence, use
+`head_commit: record-commit`, commit once, then run read-only clean-tree checks.
+Do not put predicted commit or push state in current-state documents. Exact
+post-commit output belongs in the external experiment report or handoff.
 
 ## Security
 
@@ -210,15 +240,15 @@ STANDARD_FILES: dict[str, str] = {
     "docs/project-structure.md": _PROJECT_STRUCTURE_TEMPLATE,
     "docs/project-conventions.md": _CONVENTIONS_TEMPLATE,
     "docs/templates/INDEX.md": "# Record templates\n\nTemplates: requirement, design, decision, task, bug, review, verification, migration.\n",
-    "docs/requirements/INDEX.md": "<!-- PGK_GENERATED: requirement-index -->\n# Requirement index\n\nNo records yet.\n",
-    "docs/design/INDEX.md": "<!-- PGK_GENERATED: design-index -->\n# Design index\n\nNo records yet.\n",
-    "docs/decisions/INDEX.md": "<!-- PGK_GENERATED: decision-index -->\n# Decision index\n\nNo records yet.\n",
+    "docs/requirements/INDEX.md": "<!-- PGK_GENERATED: requirement-index -->\n# Requirement index\n\nThe index is generated from records.\n\nNo records yet.\n",
+    "docs/design/INDEX.md": "<!-- PGK_GENERATED: design-index -->\n# Design index\n\nThe index is generated from records.\n\nNo records yet.\n",
+    "docs/decisions/INDEX.md": "<!-- PGK_GENERATED: decision-index -->\n# Decision index\n\nThe index is generated from records.\n\nNo records yet.\n",
     "docs/work/BOARD.md": "<!-- PGK_GENERATED: board -->\n# Work board\n\n| ID | type | status | owner | related | branch/worktree | verification | blocker | next |\n|---|---|---|---|---|---|---|---|---|\n",
-    "docs/work/tasks/INDEX.md": "<!-- PGK_GENERATED: task-index -->\n# Task index\n\nNo records yet.\n",
-    "docs/work/bugs/INDEX.md": "<!-- PGK_GENERATED: bug-index -->\n# Bug index\n\nNo records yet.\n",
-    "docs/reviews/INDEX.md": "<!-- PGK_GENERATED: review-index -->\n# Review index\n\nNo records yet.\n",
-    "docs/verification/INDEX.md": "<!-- PGK_GENERATED: verification-index -->\n# Verification index\n\nNo records yet.\n",
-    "docs/migrations/INDEX.md": "<!-- PGK_GENERATED: migration-index -->\n# Migration index\n\nNo records yet.\n",
+    "docs/work/tasks/INDEX.md": "<!-- PGK_GENERATED: task-index -->\n# Task index\n\nThe index is generated from records.\n\nNo records yet.\n",
+    "docs/work/bugs/INDEX.md": "<!-- PGK_GENERATED: bug-index -->\n# Bug index\n\nThe index is generated from records.\n\nNo records yet.\n",
+    "docs/reviews/INDEX.md": "<!-- PGK_GENERATED: review-index -->\n# Review index\n\nThe index is generated from records.\n\nNo records yet.\n",
+    "docs/verification/INDEX.md": "<!-- PGK_GENERATED: verification-index -->\n# Verification index\n\nThe index is generated from records.\n\nNo records yet.\n",
+    "docs/migrations/INDEX.md": "<!-- PGK_GENERATED: migration-index -->\n# Migration index\n\nThe index is generated from records.\n\nNo records yet.\n",
     "docs/activity/ACTIVITY.md": "<!-- PGK_GENERATED: activity -->\n# Activity\n\n<!-- timestamp | actor | action | record_id | git_ref | result -->\n{date} | pgk | initialize | N/A | N/A | initialized -> requirements_discussion\n",
     "docs/operations/runbooks/INDEX.md": _EMPTY.format(title="Runbooks index"),
     "docs/operations/incidents/INDEX.md": _EMPTY.format(title="Incidents index"),
@@ -226,13 +256,20 @@ STANDARD_FILES: dict[str, str] = {
     "docs/work/INDEX.md": "<!-- PGK_GENERATED: work-index -->\n# Work index\n\nThe index is generated from task and bug records.\n\n## Active\n\nNo records yet.\n\n## Planned\n\nNo records yet.\n\n## Completed\n\nNo records yet.\n\n## Bugs\n\nNo records yet.\n",
 }
 for _kind in ("requirement", "design", "decision", "task", "bug", "verification"):
-    _template = f"# {_kind.title()} template\n\n## Purpose\n"
+    _template = f"# {_kind.title()} template\n\n"
+    if _kind in {"task", "bug", "verification"}:
+        _template += "<!-- PGK_CONTRACT: terminal-v2 -->\n\n"
+    _template += "## Purpose\n"
     if _kind in {"task", "bug", "verification"}:
         _template += "## Owner\nN/A\n"
     _template += "## Scope\nN/A\n"
     if _kind in {"task", "bug"}:
         _template += "## Files\nN/A\n"
-    _template += "## Acceptance\n## Evidence\n## Changes\n## Blockers\n## Next action\n"
+    if _kind in {"task", "bug", "verification"}:
+        _template += "## Acceptance\n- AC-1: replace with one observable acceptance criterion\n## Evidence\n- AC-1: pending\n"
+    else:
+        _template += "## Acceptance\n## Evidence\n"
+    _template += "## Changes\n## Blockers\n## Next action\n"
     if _kind in {"task", "bug"}:
         _template += "N/A\n\n## Git\nbranch: N/A\nworktree: N/A\nbase_commit: N/A\nhead_commit: N/A\n"
     STANDARD_FILES[f"docs/templates/{_kind}.md"] = _template

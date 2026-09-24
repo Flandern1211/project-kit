@@ -17,3 +17,9 @@ The index is generated from records.
 - [TASK-011](TASK-011-implement-v0-2-existing-project-migration.md) — verified
 - [TASK-012](TASK-012-fix-migration-relative-links.md) — verified
 - [TASK-014](TASK-014-document-consistency-and-drift-checks.md) — verified
+- [TASK-015](TASK-015-narrow-future-roadmap.md) — verified
+- [TASK-016](TASK-016-agent-first-project-entry.md) — verified
+- [TASK-017](TASK-017-explicit-skill-five-element-contract.md) — verified
+- [TASK-018](TASK-018-publish-skill-to-github.md) — verified
+- [TASK-019](TASK-019-enforce-terminal-governance-gates.md) — verified
+- [TASK-020](TASK-020-correct-sequential-scope-checks-and-upgrade-idempotence.md) — in_review

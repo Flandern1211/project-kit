@@ -58,6 +58,51 @@ def test_checks_ignore_local_agent_projection_documents(tmp_path: Path):
     assert not any(issue["path"].startswith(".agent/") for issue in result.issues)
 
 
+def test_checks_validate_skill_frontmatter_without_treating_it_as_a_record(tmp_path: Path):
+    init_project(tmp_path)
+    skill = tmp_path / "skills/project-governance-kit/SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text(
+        "---\n"
+        "name: project-governance-kit\n"
+        "description: Use PGK through an Agent.\n"
+        "---\n\n"
+        "# Skill\n",
+        encoding="utf-8",
+    )
+
+    result = run_checks(tmp_path)
+
+    assert "skills/project-governance-kit/SKILL.md" in result.checked_files
+    assert not any(issue["code"] in {"invalid_frontmatter", "invalid_skill_frontmatter"} for issue in result.issues)
+
+
+def test_checks_report_invalid_skill_frontmatter(tmp_path: Path):
+    init_project(tmp_path)
+    skill = tmp_path / "skills/project-governance-kit/SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("---\nname: wrong-name\n---\n\n# Skill\n", encoding="utf-8")
+
+    result = run_checks(tmp_path)
+
+    issues = [issue for issue in result.issues if issue["path"] == "skills/project-governance-kit/SKILL.md"]
+    assert [issue["code"] for issue in issues] == ["invalid_skill_frontmatter", "invalid_skill_frontmatter"]
+    assert any("description" in issue["message"] for issue in issues)
+    assert any("does not match directory" in issue["message"] for issue in issues)
+
+
+def test_checks_ignore_generated_skill_evaluation_workspaces(tmp_path: Path):
+    init_project(tmp_path)
+    generated = tmp_path / "skills/project-governance-kit-workspace/iteration-1/fixture.md"
+    generated.parent.mkdir(parents=True)
+    generated.write_text("---\ninvalid: lifecycle\n---\n[broken](missing.md)\n", encoding="utf-8")
+
+    result = run_checks(tmp_path)
+
+    assert "skills/project-governance-kit-workspace/iteration-1/fixture.md" not in result.checked_files
+    assert not any(issue["path"].startswith("skills/project-governance-kit-workspace/") for issue in result.issues)
+
+
 def test_checks_do_not_skip_views_when_governance_marker_lacks_stage(tmp_path: Path):
     init_project(tmp_path)
     status = tmp_path / "docs/STATUS.md"
@@ -115,14 +160,22 @@ work
     assert "missing_record_field" in codes
 
 
-def test_checks_normalize_directory_and_separator_file_scope_overlap(tmp_path: Path):
+def test_checks_ignore_sequential_file_scope_overlap(tmp_path: Path):
     init_project(tmp_path)
     _task(tmp_path, "TASK-001", scope="src/")
     _task(tmp_path, "TASK-002", scope=".\\src\\app.py")
 
     result = run_checks(tmp_path)
 
-    assert any(issue["code"] == "overlapping_file_scope" for issue in result.issues)
+    assert not any(issue["code"] == "overlapping_file_scope" for issue in result.issues)
+
+    config = tmp_path / ".project-governance.toml"
+    config.write_text(
+        config.read_text(encoding="utf-8").replace('"single-agent"', '"sequential-agents"'),
+        encoding="utf-8",
+    )
+    result = run_checks(tmp_path)
+    assert not any(issue["code"] == "overlapping_file_scope" for issue in result.issues)
 
 
 def test_scope_values_strip_punctuation_around_inline_code_paths():
@@ -210,6 +263,11 @@ def test_checks_report_dirty_git_and_overlapping_file_scopes(tmp_path: Path):
     init_project(tmp_path)
     _task(tmp_path, "TASK-001", scope="src/shared.py")
     _task(tmp_path, "TASK-002", scope="src/shared.py")
+    config = tmp_path / ".project-governance.toml"
+    config.write_text(
+        config.read_text(encoding="utf-8").replace('"single-agent"', '"parallel-agents"'),
+        encoding="utf-8",
+    )
     _git(tmp_path, "init", "--quiet")
     _git(tmp_path, "config", "user.email", "test@example.test")
     _git(tmp_path, "config", "user.name", "Test")
@@ -222,6 +280,32 @@ def test_checks_report_dirty_git_and_overlapping_file_scopes(tmp_path: Path):
     codes = {issue["code"] for issue in result.issues}
     assert "dirty_worktree" in codes
     assert "overlapping_file_scope" in codes
+    assert sum(issue["code"] == "dirty_worktree" for issue in result.issues) == 1
+
+    task = tmp_path / "docs/work/tasks/TASK-002.md"
+    task.write_text(task.read_text(encoding="utf-8").replace("status: in_progress", "status: blocked"), encoding="utf-8")
+    result = run_checks(tmp_path)
+    assert not any(issue["code"] == "overlapping_file_scope" for issue in result.issues)
+
+
+def test_checks_distinguish_current_and_other_dirty_worktrees(tmp_path: Path):
+    root = tmp_path / "project"
+    root.mkdir()
+    init_project(root)
+    _git(root, "init", "--quiet")
+    _git(root, "config", "user.email", "test@example.test")
+    _git(root, "config", "user.name", "Test")
+    _git(root, "add", ".")
+    _git(root, "commit", "-qm", "baseline")
+    linked = tmp_path / "linked"
+    _git(root, "worktree", "add", "--quiet", "-b", "linked", str(linked))
+    (root / "local.txt").write_text("local", encoding="utf-8")
+    (linked / "remote.txt").write_text("remote", encoding="utf-8")
+
+    issues = [issue for issue in run_checks(root).issues if issue["code"] == "dirty_worktree"]
+
+    assert len(issues) == 2
+    assert {issue["path"] for issue in issues} == {".git", linked.as_posix()}
 
 
 def test_checks_validate_status_and_generated_view_contracts(tmp_path: Path):

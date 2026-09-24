@@ -1,4 +1,4 @@
-kit_version = "0.2.0.dev0"
+kit_version = "0.2.0.dev1"
 schema_version = 1
 profile = "standard"
 collaboration_mode = "single-agent"
