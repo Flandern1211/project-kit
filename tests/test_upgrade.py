@@ -97,6 +97,36 @@ def test_upgrade_apply_preserves_custom_sections_history_and_writes_version_last
     assert second.changed == ()
 
 
+def test_same_version_generated_view_drift_does_not_create_upgrade_activity(tmp_path: Path):
+    init_project(tmp_path)
+    board = tmp_path / "docs/work/BOARD.md"
+    board.write_text(board.read_text(encoding="utf-8") + "stale\n", encoding="utf-8")
+    activity = tmp_path / "docs/activity/ACTIVITY.md"
+    before = activity.read_bytes()
+
+    preview = upgrade_module.upgrade_project(tmp_path)
+    assert preview.changed == ("docs/work/BOARD.md",)
+    assert activity.read_bytes() == before
+
+    applied = upgrade_module.upgrade_project(tmp_path, apply=True)
+    assert applied.ok
+    assert activity.read_bytes() == before
+    assert upgrade_module.upgrade_project(tmp_path).changed == ()
+
+
+def test_upgrade_repairs_extra_blank_line_after_last_managed_section(tmp_path: Path):
+    init_project(tmp_path)
+    agents = tmp_path / "AGENTS.md"
+    agents.write_text(agents.read_text(encoding="utf-8") + "\n", encoding="utf-8")
+
+    preview = upgrade_module.upgrade_project(tmp_path)
+
+    assert "AGENTS.md" in preview.changed
+    assert upgrade_module.upgrade_project(tmp_path, apply=True).ok
+    assert agents.read_text(encoding="utf-8").endswith("only.\n")
+    assert upgrade_module.upgrade_project(tmp_path).changed == ()
+
+
 def test_customized_template_causes_zero_writes(tmp_path: Path):
     _legacy_project(tmp_path)
     template = tmp_path / "docs/templates/task.md"

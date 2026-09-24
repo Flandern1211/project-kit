@@ -291,12 +291,14 @@ def run_checks(root: str | Path) -> CheckResult:
     _check_project_version(root, issues)
     profile = "standard"
     visibility = "public"
+    collaboration_mode = "single-agent"
     governance_dir = Path("docs")
     public_docs_dir = Path("docs")
     try:
         config = load_config(root / ".project-governance.toml")
         profile = config.profile
         visibility = config.visibility
+        collaboration_mode = config.collaboration_mode
         governance_dir = Path(config.governance_dir)
         public_docs_dir = Path(config.public_docs_dir)
     except (OSError, ValueError) as exc:
@@ -547,12 +549,13 @@ def run_checks(root: str | Path) -> CheckResult:
             if len(fields) != 6 or any(not field.strip() for field in fields) or not re.match(r"^\d{4}-\d{2}-\d{2}(?:T|$)", fields[0].strip()):
                 _issue(issues, "invalid_activity_line", (governance_dir / "activity/ACTIVITY.md").as_posix(), f"line {number} must have six fields")
     scopes: list[tuple[str, str, str]] = []; declared_branches: set[str] = set()
-    active_records = {"in_progress", "in_review", "blocked"}
+    parallel_scope_check = collaboration_mode == "parallel-agents"
+    active_records = {"in_progress", "in_review"}
     for relative, metadata, body, _text in records:
         if metadata.type.value not in {"task", "bug"}: continue
         branch = _declared_branch(body)
         if branch: declared_branches.add(branch)
-        if metadata.status.value not in active_records: continue
+        if not parallel_scope_check or metadata.status.value not in active_records: continue
         scopes.extend((scope, metadata.id, relative) for scope in _scope_values(body))
     for index, (scope, record_id, relative) in enumerate(scopes):
         for other_scope, other_id, other_relative in scopes[index + 1:]:
@@ -573,7 +576,8 @@ def run_checks(root: str | Path) -> CheckResult:
     if git is not None and same_repository:
         if git.dirty: _issue(issues, "dirty_worktree", ".git", "Git worktree has uncommitted changes")
         for worktree in git.worktrees:
-            if worktree.get("dirty") == "true": _issue(issues, "dirty_worktree", worktree.get("path", ".git"), "linked Git worktree has uncommitted changes")
+            if worktree.get("dirty") == "true" and Path(worktree.get("path", ".git")).resolve() != root.resolve():
+                _issue(issues, "dirty_worktree", worktree.get("path", ".git"), "linked Git worktree has uncommitted changes")
         try: branches = subprocess.run(["git", "branch", "--no-merged", "HEAD", "--format=%(refname:short)"], cwd=root, check=True, capture_output=True, text=True).stdout.splitlines()
         except (OSError, subprocess.CalledProcessError): branches = []
         if git.branch not in {"detached", "unborn", "unavailable"}:

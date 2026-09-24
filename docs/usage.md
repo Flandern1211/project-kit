@@ -215,6 +215,11 @@ JSON 报告包含 `from_version`、`to_version`、`changed`、逐文件 `changes
 升级只处理版本化迁移中声明的 Agent 合同章节、WORKFLOW/约定章节、TASK/BUG/VER
 模板和生成视图；历史生命周期记录保持逐字节不变。项目修改过受管模板或章节、缺少
 生成标记、来源版本未知时，命令报告冲突且不写任何文件。
+同版本只修复生成视图时不会写一条虚假的升级活动；生成视图漂移通常使用
+`pgk index` 重建。
+
+A same-version generated-view refresh does not append a fictitious upgrade
+activity event. Normally regenerate stale views with `pgk index`.
 
 The JSON report includes the source and target versions, changed paths,
 per-file diffs and hashes, unchanged paths, conflicts, and application state.
@@ -277,6 +282,10 @@ pgk doctor --root .
 `check` 检查治理基线、Markdown 本地链接、frontmatter、重复 ID、状态、终态合同、
 声明文件、生成视图、STATUS 引用、Kit 版本一致性和当前 Git 分支状态。
 发现问题时返回退出码 `1`；命令错误或参数错误返回 `2`。
+文件范围重叠只对并行且正在执行/审查的任务报告；顺序任务共享文件不是冲突。
+
+File-scope overlap is diagnostic for active parallel work only. Sequential
+tasks may reuse shared files.
 
 `check` validates governance baselines, local Markdown links, frontmatter,
 duplicate IDs, statuses, terminal contracts, declared files, generated views,

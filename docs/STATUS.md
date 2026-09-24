@@ -1,18 +1,18 @@
 # Project status
 
 ```yaml
-status: verified
+status: in_review
 project_stage: active_development
 version: 0.2.0.dev1
-active_task: none
+active_task: TASK-020
 current_requirement: REQ-001-ZH
 current_design: DES-002-ZH
-current_task: none
-owner: root
-blocker: none
-next_action: none; new work requires an accepted requirement and task
+current_task: TASK-020
+owner: Codex
+blocker: TASK-020 terminal review pending; FundAgent external business blockers remain separate
+next_action: review TASK-020 and VER-007 for terminal acceptance
 git_state: git_initialized
-updated: 2026-09-22
+updated: 2026-09-24
 ```
 
 ## Current scope
@@ -64,8 +64,10 @@ verification evidence; historical records remain readable without repository-wid
 migration. Generated-view drift and invalid Git evidence are now checkable facts.
 
 TASK-019 terminal gates and the governed-project upgrade path passed focused
-and full verification. The FundAgent audit remains read-only; its upgrade
-proposal was generated but not applied.
+and full verification. TASK-020 follows the FundAgent upgrade audit: it narrows
+file-scope diagnostics to active parallel work, removes duplicate local Git
+warnings, and makes same-version view repair and final-section formatting
+idempotent. FundAgent's own business remediation is not a PGK verification.
 
 ## Known constraints
 
@@ -104,10 +106,12 @@ proposal was generated but not applied.
 - TASK-019: 184-test full regression, 7 focused upgrade tests, compileall, and
   diff checks passed; FundAgent upgrade preview proposed 10 changes and wrote
   nothing; see [VER-006](verification/VER-006-terminal-gate-verification.md).
+- TASK-020: 187-test full regression, compileall, diff check, and index preview
+  passed. The pre-commit current-source check had only a dirty-worktree issue.
+  FundAgent check/doctor likewise have only one dirty-worktree issue; see
+  [VER-007](verification/VER-007-scope-and-upgrade-follow-up-verification.md).
 
 ## Next action
 
-No active task. TASK-019 is verified and its evidence is recorded in
-[VER-006](verification/VER-006-terminal-gate-verification.md). Review of
-[Flandern1211/skills PR #1](https://github.com/Flandern1211/skills/pull/1)
-remains a separate protected remote action.
+Review TASK-020 and VER-007 for terminal acceptance. The existing Skill PR
+remains unrelated.

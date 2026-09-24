@@ -27,6 +27,8 @@ require an accepted design and task.
 `main` is an integration branch. A non-trivial task uses one short-lived
 branch and one worktree when parallel work is active. A reviewer does not
 silently modify the implementer's branch.
+File-scope overlap is a conflict diagnostic only for active parallel work;
+single-Agent or sequential tasks may legitimately touch the same shared files.
 
 ## Verification
 

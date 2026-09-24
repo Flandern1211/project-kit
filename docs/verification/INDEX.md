@@ -10,3 +10,4 @@ The index is generated from records.
 - [VER-004](VER-004-agent-first-project-entry.md) — verified
 - [VER-005](VER-005-skill-five-element-contract.md) — verified
 - [VER-006](VER-006-terminal-gate-verification.md) — verified
+- [VER-007](VER-007-scope-and-upgrade-follow-up-verification.md) — in_review

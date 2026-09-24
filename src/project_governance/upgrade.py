@@ -131,7 +131,8 @@ def _replace_section(text: str, heading: str, replacement: str) -> str:
     if item is None:
         raise UpgradeError(f"managed section is missing: {heading}")
     _name, _body, start, end = item
-    return text[:start] + replacement.rstrip() + "\n\n" + text[end:].lstrip("\n")
+    remainder = text[end:].lstrip("\n")
+    return text[:start] + replacement.rstrip() + ("\n\n" if remainder else "\n") + remainder
 
 
 def _insert_after_section(text: str, after: str, replacement: str) -> str:
@@ -539,6 +540,10 @@ def upgrade_project(root: str | Path, *, apply: bool = False) -> UpgradeResult:
     except (OSError, ValueError) as exc:
         _conflict(conflicts, "generated views", f"cannot render generated views: {exc}")
         generated = {}
+    managed_changes = from_version != __version__ or any(
+        not _same_text(_read(path), target)
+        for path, target in planned.items()
+    )
     for path, target in generated.items():
         relative = path.relative_to(root).as_posix()
         try:
@@ -555,11 +560,7 @@ def upgrade_project(root: str | Path, *, apply: bool = False) -> UpgradeResult:
         before = _read(activity)
         if "<!-- PGK_GENERATED: activity -->" not in before:
             raise UpgradeError("generated marker is missing")
-        contract_changes = from_version != __version__ or any(
-            not _same_text(_read(path), target)
-            for path, target in planned.items()
-        )
-        planned[activity] = _upgrade_activity(before, from_version) if contract_changes else before
+        planned[activity] = _upgrade_activity(before, from_version) if managed_changes else before
     except UpgradeError as exc:
         _conflict(conflicts, activity.relative_to(root).as_posix(), str(exc))
 

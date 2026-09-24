@@ -5,7 +5,7 @@ The index is generated from task and bug records.
 
 ## Active
 
-No records yet.
+- [TASK-020](tasks/TASK-020-correct-sequential-scope-checks-and-upgrade-idempotence.md) — in_review
 
 ## Planned
 

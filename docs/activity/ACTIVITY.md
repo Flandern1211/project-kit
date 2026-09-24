@@ -64,3 +64,8 @@
 2026-09-22T16:24:15+08:00 | pgk | transition | REVIEW-002 | N/A | in_review->verified
 2026-09-22T16:28:31+08:00 | pgk | transition | TASK-019 | N/A | in_progress->in_review
 2026-09-22T16:28:32+08:00 | pgk | transition | TASK-019 | N/A | in_review->verified
+2026-09-23T11:53:45+08:00 | pgk | create | TASK-020 | N/A | created
+2026-09-23T11:53:45+08:00 | pgk | create | VER-007 | N/A | created
+2026-09-23T11:59:18+08:00 | pgk | transition | TASK-020 | N/A | draft->in_progress
+2026-09-23T11:59:18+08:00 | pgk | transition | VER-007 | N/A | draft->in_review
+2026-09-23T12:10:57+08:00 | pgk | transition | TASK-020 | N/A | in_progress->in_review
