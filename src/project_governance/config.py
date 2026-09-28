@@ -85,6 +85,11 @@ def load_config(path: Path) -> ProjectConfig:
     collaboration_mode = validate_collaboration_mode(data.get("collaboration_mode", "single-agent"))
     visibility = validate_visibility(data.get("visibility", "public"))
     default_governance, default_public = default_visibility_dirs(visibility)
+    governance_dir, public_docs_dir = validate_visibility_dirs(
+        visibility,
+        data.get("governance_dir", default_governance),
+        data.get("public_docs_dir", default_public),
+    )
     scan_roots = data.get("scan_roots", ())
     exclude_patterns = data.get("exclude_patterns", ())
     if isinstance(scan_roots, str):
@@ -99,8 +104,8 @@ def load_config(path: Path) -> ProjectConfig:
         docs_dir=data.get("docs_dir", "docs"),
         records_dir=data.get("records_dir", "docs/work"),
         template_dir=data.get("template_dir"),
-        governance_dir=data.get("governance_dir", default_governance),
-        public_docs_dir=data.get("public_docs_dir", default_public),
+        governance_dir=governance_dir,
+        public_docs_dir=public_docs_dir,
         scan_roots=tuple(str(item) for item in scan_roots),
         exclude_patterns=tuple(str(item) for item in exclude_patterns),
         extra={k: v for k, v in data.items() if k not in known},

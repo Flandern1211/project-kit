@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import os
 import re
+import shutil
 from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
+import tempfile
 from typing import Iterable, Sequence
 
 from .contracts import record_contract_issues
@@ -140,11 +143,17 @@ def create_record(
         raise DuplicateRecordError(f"record path already exists: {path.relative_to(root).as_posix()}")
     if not dry_run:
         _ensure_views_writable(root)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(render_template(record_type.value, metadata, {"title": title}), encoding="utf-8")
-        update_work_index(root)
-        update_indexes(root)
-        append_activity(root, "pgk", "create", record_id, "N/A", "created")
+        rendered = render_template(record_type.value, metadata, {"title": title})
+        rendered_metadata, rendered_body = parse_frontmatter(rendered)
+        candidates = _record_candidates(root)
+        candidates.append(RecordCandidate(path, rendered_metadata, rendered_body))
+        updates = {path: rendered}
+        updates.update(expected_generated_views(root, candidates=candidates))
+        activity_path, activity_content = _render_activity_append(
+            root, "pgk", "create", record_id, "N/A", "created"
+        )
+        updates[activity_path] = activity_content
+        _atomic_update(updates)
     return path
 
 
@@ -192,8 +201,7 @@ def update_work_index(root: str | Path, *, dry_run: bool = False) -> Path:
         if "<!-- PGK_GENERATED: work-index -->" not in existing:
             raise FileExistsError(f"refusing to overwrite project-owned index: {index}")
     if not dry_run:
-        index.parent.mkdir(parents=True, exist_ok=True)
-        index.write_text(content, encoding="utf-8")
+        _atomic_update({index: content})
     return index
 
 
@@ -236,6 +244,109 @@ def _view_write(path: Path, content: str, marker: str, *, dry_run: bool) -> None
     if not dry_run:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding="utf-8")
+
+
+def _replace_path(source: Path, target: Path) -> None:
+    """Replace one path; kept separate so transaction failures are testable."""
+
+    os.replace(source, target)
+
+
+def _preserve_newlines(path: Path, content: str) -> str:
+    """Keep the existing target's newline convention when replacing it."""
+
+    try:
+        raw = path.read_bytes()
+    except OSError:
+        return content
+    normalized = content.replace("\r\n", "\n").replace("\r", "\n")
+    if b"\r\n" in raw and raw.count(b"\r\n") == raw.count(b"\n"):
+        return normalized.replace("\n", "\r\n")
+    return normalized
+
+
+def _atomic_update(updates: dict[Path, str]) -> None:
+    """Apply a multi-file update with rollback if any replacement fails.
+
+    Files are staged in their destination directories before the first target is
+    replaced. Existing targets are backed up so an exception during a later
+    replacement restores every target to its original bytes. This gives callers
+    an all-or-nothing transition boundary even though the filesystem has no
+    cross-file transaction primitive.
+    """
+
+    staged: dict[Path, Path] = {}
+    backups: dict[Path, Path | None] = {}
+    replaced: list[Path] = []
+    preserved_backups: set[Path] = set()
+    try:
+        for target, content in updates.items():
+            if target.is_symlink():
+                raise OSError(f"refusing to replace symlink transaction target: {target}")
+            target.parent.mkdir(parents=True, exist_ok=True)
+            descriptor, temporary_name = tempfile.mkstemp(
+                prefix=f".{target.name}.", suffix=".pgk-tmp", dir=target.parent
+            )
+            temporary = Path(temporary_name)
+            staged[target] = temporary
+            with os.fdopen(descriptor, "w", encoding="utf-8", newline="") as stream:
+                stream.write(_preserve_newlines(target, content))
+            if target.exists():
+                shutil.copymode(target, temporary)
+
+        for target in updates:
+            if target.exists():
+                descriptor, backup_name = tempfile.mkstemp(
+                    prefix=f".{target.name}.", suffix=".pgk-backup", dir=target.parent
+                )
+                os.close(descriptor)
+                backup = Path(backup_name)
+                backups[target] = backup
+                shutil.copy2(target, backup)
+            else:
+                backups[target] = None
+
+        for target, temporary in staged.items():
+            _replace_path(temporary, target)
+            replaced.append(target)
+    except Exception as exc:
+        rollback_errors: list[str] = []
+        for target in reversed(replaced):
+            backup = backups.get(target)
+            try:
+                if backup is None:
+                    target.unlink(missing_ok=True)
+                else:
+                    os.replace(backup, target)
+                    backups[target] = None
+            except OSError as rollback_exc:
+                if backup is not None:
+                    try:
+                        # A second replace may fail under a transient lock or
+                        # injected failure; copying the preserved bytes still
+                        # restores the target without consuming the backup.
+                        shutil.copy2(backup, target)
+                        backup.unlink(missing_ok=True)
+                        backups[target] = None
+                        continue
+                    except OSError as fallback_exc:
+                        preserved_backups.add(backup)
+                        rollback_errors.append(f"{target}: {rollback_exc}; fallback: {fallback_exc}")
+                else:
+                    rollback_errors.append(f"{target}: {rollback_exc}")
+        if rollback_errors:
+            details = "; ".join(rollback_errors)
+            raise RuntimeError(
+                "atomic update failed and rollback was incomplete; "
+                f"recovery backups were preserved: {details}"
+            ) from exc
+        raise
+    finally:
+        for temporary in staged.values():
+            temporary.unlink(missing_ok=True)
+        for backup in backups.values():
+            if backup is not None and backup not in preserved_backups:
+                backup.unlink(missing_ok=True)
 
 
 def _directory_index(items: Sequence[RecordCandidate], index: Path, marker: str, title: str) -> str:
@@ -288,11 +399,13 @@ def _board_content(items: Sequence[RecordCandidate]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def expected_generated_views(root: str | Path) -> dict[Path, str]:
+def expected_generated_views(
+    root: str | Path, *, candidates: Sequence[RecordCandidate] | None = None
+) -> dict[Path, str]:
     """Return canonical generated view content without writing files."""
 
     root = Path(root)
-    candidates = _record_candidates(root)
+    candidates = list(candidates) if candidates is not None else _record_candidates(root)
     work_root = _record_directories(root)[RecordType.TASK].parent
     work_index = root / work_root / "INDEX.md"
     result = {
@@ -317,13 +430,12 @@ def update_indexes(root: str | Path, *, dry_run: bool = False) -> dict[str, Path
     generated = expected_generated_views(root)
     result: dict[str, Path] = {}
     for kind, index in _indexes_for_project(root).items():
-        marker = f"{kind.value}-index"
-        _view_write(root / index, generated[root / index], marker, dry_run=dry_run)
         result[kind.value] = root / index
     work_root = _record_directories(root)[RecordType.TASK].parent
     board = root / work_root / "BOARD.md"
-    _view_write(board, generated[board], "board", dry_run=dry_run)
     result["board"] = board
+    if not dry_run:
+        _atomic_update({path: generated[path] for path in result.values()})
     return result
 
 
@@ -377,25 +489,81 @@ def transition_record(
 
     if not dry_run:
         _ensure_views_writable(root)
-        path.write_text(render_frontmatter(updated_metadata) + body.rstrip() + "\n", encoding="utf-8")
-        update_work_index(root)
-        update_indexes(root)
-        append_activity(root, "pgk", "transition", record_id, "N/A", f"{metadata.status.value}->{target.value}")
+        prospective_candidates = _record_candidates(root)
+        for index, candidate in enumerate(prospective_candidates):
+            if candidate.metadata.id == record_id:
+                prospective_candidates[index] = RecordCandidate(
+                    candidate.path, updated_metadata, body
+                )
+                break
+        else:
+            raise ValueError(f"record is not indexable: {record_id}")
+
+        updates = {
+            path: content
+            for path, content in expected_generated_views(
+                root, candidates=prospective_candidates
+            ).items()
+        }
+        updates[path] = render_frontmatter(updated_metadata) + body.rstrip() + "\n"
+        activity_path, activity_content = _render_activity_append(
+            root, "pgk", "transition", record_id, "N/A", f"{metadata.status.value}->{target.value}"
+        )
+        updates[activity_path] = activity_content
+        _atomic_update(updates)
     return path, metadata.status, target
+
+
+def _render_activity_append(
+    root: str | Path,
+    actor: str,
+    action: str,
+    record_id: str,
+    git_ref: str,
+    result: str,
+) -> tuple[Path, str]:
+    """Render one fixed-format governance event without writing it."""
+
+    root = Path(root)
+    fields = (actor, action, record_id, git_ref, result)
+    if any("|" in value or "\n" in value or "\r" in value for value in fields):
+        raise ValueError("activity fields must not contain pipe or newline characters")
+    path = root / _governance_root(root) / "activity/ACTIVITY.md"
+    if path.exists() and "<!-- PGK_GENERATED: activity -->" not in path.read_text(encoding="utf-8"):
+        raise FileExistsError(f"refusing to overwrite project-owned view: {path}")
+    content = (
+        path.read_text(encoding="utf-8")
+        if path.exists()
+        else "<!-- PGK_GENERATED: activity -->\n# Activity\n\n<!-- timestamp | actor | action | record_id | git_ref | result -->\n"
+    )
+    timestamp = datetime.now().astimezone().isoformat(timespec="seconds")
+    return path, content + f"{timestamp} | {actor} | {action} | {record_id} | {git_ref} | {result}\n"
 
 
 def append_activity(root: str | Path, actor: str, action: str, record_id: str, git_ref: str, result: str) -> Path:
     """Append one fixed-format governance event to ACTIVITY.md."""
+
+    root = Path(root)
     fields = (actor, action, record_id, git_ref, result)
     if any("|" in value or "\n" in value or "\r" in value for value in fields):
         raise ValueError("activity fields must not contain pipe or newline characters")
-    path = Path(root) / _governance_root(Path(root)) / "activity/ACTIVITY.md"
+    path = root / _governance_root(root) / "activity/ACTIVITY.md"
     path.parent.mkdir(parents=True, exist_ok=True)
-    if path.exists() and "<!-- PGK_GENERATED: activity -->" not in path.read_text(encoding="utf-8"):
-        raise FileExistsError(f"refusing to overwrite project-owned view: {path}")
-    if not path.exists():
-        path.write_text("<!-- PGK_GENERATED: activity -->\n# Activity\n\n<!-- timestamp | actor | action | record_id | git_ref | result -->\n", encoding="utf-8")
+    if path.exists():
+        raw = path.read_bytes()
+        if b"<!-- PGK_GENERATED: activity -->" not in raw:
+            raise FileExistsError(f"refusing to overwrite project-owned view: {path}")
+        newline = "\r\n" if b"\r\n" in raw and raw.count(b"\r\n") == raw.count(b"\n") else "\n"
+    else:
+        newline = "\n"
+        path.write_text(
+            "<!-- PGK_GENERATED: activity -->\n# Activity\n\n"
+            "<!-- timestamp | actor | action | record_id | git_ref | result -->\n",
+            encoding="utf-8",
+        )
     timestamp = datetime.now().astimezone().isoformat(timespec="seconds")
-    with path.open("a", encoding="utf-8") as fh:
-        fh.write(f"{timestamp} | {actor} | {action} | {record_id} | {git_ref} | {result}\n")
+    with path.open("a", encoding="utf-8", newline="") as stream:
+        stream.write(
+            f"{timestamp} | {actor} | {action} | {record_id} | {git_ref} | {result}{newline}"
+        )
     return path

@@ -1,18 +1,18 @@
 # Project status
 
 ```yaml
-status: in_review
+status: active_development
 project_stage: active_development
 version: 0.2.0.dev1
-active_task: TASK-020
+active_task: TASK-024
 current_requirement: REQ-001-ZH
 current_design: DES-002-ZH
-current_task: TASK-020
+current_task: TASK-024
 owner: Codex
-blocker: TASK-020 terminal review pending; FundAgent external business blockers remain separate
-next_action: review TASK-020 and VER-007 for terminal acceptance
+blocker: None for TASK-021 through TASK-024 implementation; remote integration remains separately authorized
+next_action: review the verification handoff and decide whether to integrate the task branch
 git_state: git_initialized
-updated: 2026-09-24
+updated: 2026-09-28
 ```
 
 ## Current scope
@@ -69,6 +69,18 @@ file-scope diagnostics to active parallel work, removes duplicate local Git
 warnings, and makes same-version view repair and final-section formatting
 idempotent. FundAgent's own business remediation is not a PGK verification.
 
+TASK-021 makes formal lifecycle transitions atomic across the record file,
+generated indexes/BOARD, and ACTIVITY log. Failure-injection and successful-path
+tests pass; Git finalization evidence belongs in the external handoff.
+
+TASK-022 fixes custom governance-directory routing across migration and public
+visibility flows, including dirty-target protection. TASK-023 validates configured
+governance paths before use so malformed configuration cannot escape the project
+root. Both are verified by VER-009 and VER-010.
+
+TASK-024 extends the transaction boundary to record creation, generated-view
+refresh, and handoff updates; VER-011 covers failure-injection rollback.
+
 ## Known constraints
 
 - v0.1 uses Python 3.11+ and the standard library at runtime;
@@ -110,8 +122,17 @@ idempotent. FundAgent's own business remediation is not a PGK verification.
   passed. The pre-commit current-source check had only a dirty-worktree issue.
   FundAgent check/doctor likewise have only one dirty-worktree issue; see
   [VER-007](verification/VER-007-scope-and-upgrade-follow-up-verification.md).
+- TASK-021: focused transition tests and the 212-test full regression passed;
+  compileall, diff check, generated-view preview, and governance checks passed
+  apart from the expected uncommitted dirty worktree; see
+  [VER-008](verification/VER-008-formal-transition-atomicity.md).
+- TASK-022/TASK-023: custom-root migration, visibility, dirty-target, and
+  configuration-boundary tests passed; see [VER-009](verification/VER-009-custom-governance-directory-routing.md)
+  and [VER-010](verification/VER-010-configured-governance-path-validation.md).
+- TASK-024: record/index/handoff failure-injection tests passed; see
+  [VER-011](verification/VER-011-record-view-handoff-atomicity.md).
 
 ## Next action
 
-Review TASK-020 and VER-007 for terminal acceptance. The existing Skill PR
-remains unrelated.
+Review the verification handoff and decide whether to integrate the task branch.
+The existing Skill PR remains unrelated; remote actions require separate authorization.

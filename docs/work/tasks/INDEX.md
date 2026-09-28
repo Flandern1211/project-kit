@@ -23,3 +23,7 @@ The index is generated from records.
 - [TASK-018](TASK-018-publish-skill-to-github.md) — verified
 - [TASK-019](TASK-019-enforce-terminal-governance-gates.md) — verified
 - [TASK-020](TASK-020-correct-sequential-scope-checks-and-upgrade-idempotence.md) — in_review
+- [TASK-021](TASK-021-make-formal-transitions-atomic.md) — verified
+- [TASK-022](TASK-022-fix-custom-governance-directory-routing.md) — verified
+- [TASK-023](TASK-023-validate-configured-governance-paths.md) — verified
+- [TASK-024](TASK-024-atomicize-record-view-and-handoff-writes.md) — verified

@@ -32,6 +32,10 @@ No records yet.
 - [TASK-017](tasks/TASK-017-explicit-skill-five-element-contract.md) — verified
 - [TASK-018](tasks/TASK-018-publish-skill-to-github.md) — verified
 - [TASK-019](tasks/TASK-019-enforce-terminal-governance-gates.md) — verified
+- [TASK-021](tasks/TASK-021-make-formal-transitions-atomic.md) — verified
+- [TASK-022](tasks/TASK-022-fix-custom-governance-directory-routing.md) — verified
+- [TASK-023](tasks/TASK-023-validate-configured-governance-paths.md) — verified
+- [TASK-024](tasks/TASK-024-atomicize-record-view-and-handoff-writes.md) — verified
 
 ## Bugs
 

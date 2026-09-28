@@ -4,6 +4,7 @@ import subprocess
 
 import pytest
 
+import project_governance.records as records_module
 from project_governance.checks import run_checks
 from project_governance.contracts import literal_file_references
 from project_governance.cli import main
@@ -98,6 +99,154 @@ def test_transition_closes_complete_v2_chain_and_refreshes_views(tmp_path: Path)
     assert "[TASK-001]" in (tmp_path / "docs/work/INDEX.md").read_text(encoding="utf-8")
     assert "TASK-001 | task | verified" in (tmp_path / "docs/work/BOARD.md").read_text(encoding="utf-8")
     assert any(" | transition | TASK-001 | " in line for line in (tmp_path / "docs/activity/ACTIVITY.md").read_text(encoding="utf-8").splitlines())
+
+
+def test_transition_success_updates_all_transaction_targets(tmp_path: Path):
+    init_project(tmp_path)
+    task, _verification = _v2_chain(tmp_path)
+    before_activity = (tmp_path / "docs/activity/ACTIVITY.md").read_bytes()
+
+    transition_record(tmp_path, "TASK-001", "in_review")
+
+    assert "status: in_review" in task.read_text(encoding="utf-8")
+    assert "[TASK-001](tasks/TASK-001-task.md) — in_review" in (
+        tmp_path / "docs/work/INDEX.md"
+    ).read_text(encoding="utf-8")
+    assert "TASK-001 | task | in_review" in (
+        tmp_path / "docs/work/BOARD.md"
+    ).read_text(encoding="utf-8")
+    activity = (tmp_path / "docs/activity/ACTIVITY.md").read_bytes()
+    assert activity.decode(encoding="utf-8").replace("\r\n", "\n").startswith(
+        before_activity.decode(encoding="utf-8").replace("\r\n", "\n")
+    )
+    assert b" | transition | TASK-001 | N/A | in_progress->in_review\n" in activity.replace(b"\r\n", b"\n")
+    assert not list(tmp_path.rglob("*.pgk-tmp"))
+    assert not list(tmp_path.rglob("*.pgk-backup"))
+
+
+def test_transition_rolls_back_when_replacement_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    init_project(tmp_path)
+    task, _verification = _v2_chain(tmp_path)
+    before = {
+        path.relative_to(tmp_path).as_posix(): path.read_bytes()
+        for path in tmp_path.rglob("*")
+        if path.is_file() and ".git" not in path.parts
+    }
+    original_replace = records_module._replace_path
+    calls = {"count": 0}
+
+    def fail_on_second_replace(source: Path, target: Path) -> None:
+        calls["count"] += 1
+        if calls["count"] == 2:
+            raise OSError("injected replacement failure")
+        original_replace(source, target)
+
+    monkeypatch.setattr(records_module, "_replace_path", fail_on_second_replace)
+
+    with pytest.raises(OSError, match="injected replacement failure"):
+        transition_record(tmp_path, "TASK-001", "in_review")
+
+    after = {
+        path.relative_to(tmp_path).as_posix(): path.read_bytes()
+        for path in tmp_path.rglob("*")
+        if path.is_file() and ".git" not in path.parts
+    }
+    assert after == before
+    assert "status: in_progress" in task.read_text(encoding="utf-8")
+    assert not list(tmp_path.rglob("*.pgk-tmp"))
+    assert not list(tmp_path.rglob("*.pgk-backup"))
+
+
+def test_transition_rolls_back_when_final_activity_replacement_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    init_project(tmp_path)
+    task, _verification = _v2_chain(tmp_path)
+    before = {
+        path.relative_to(tmp_path).as_posix(): path.read_bytes()
+        for path in tmp_path.rglob("*")
+        if path.is_file() and ".git" not in path.parts
+    }
+    original_replace = records_module._replace_path
+
+    def fail_on_activity(source: Path, target: Path) -> None:
+        if target.name == "ACTIVITY.md":
+            raise OSError("injected activity replacement failure")
+        original_replace(source, target)
+
+    monkeypatch.setattr(records_module, "_replace_path", fail_on_activity)
+
+    with pytest.raises(OSError, match="injected activity replacement failure"):
+        transition_record(tmp_path, "TASK-001", "in_review")
+
+    after = {
+        path.relative_to(tmp_path).as_posix(): path.read_bytes()
+        for path in tmp_path.rglob("*")
+        if path.is_file() and ".git" not in path.parts
+    }
+    assert after == before
+    assert "status: in_progress" in task.read_text(encoding="utf-8")
+    assert not list(tmp_path.rglob("*.pgk-tmp"))
+    assert not list(tmp_path.rglob("*.pgk-backup"))
+
+
+def test_transition_uses_backup_copy_when_rollback_replace_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    init_project(tmp_path)
+    _v2_chain(tmp_path)
+    original_replace = records_module._replace_path
+    original_os_replace = records_module.os.replace
+    calls = {"count": 0}
+
+    def fail_second_forward_replace(source: Path, target: Path) -> None:
+        calls["count"] += 1
+        if calls["count"] == 2:
+            raise OSError("injected forward failure")
+        original_replace(source, target)
+
+    def fail_backup_restore(source: str | Path, target: str | Path) -> None:
+        if str(source).endswith(".pgk-backup"):
+            raise OSError("injected rollback failure")
+        original_os_replace(source, target)
+
+    monkeypatch.setattr(records_module, "_replace_path", fail_second_forward_replace)
+    monkeypatch.setattr(records_module.os, "replace", fail_backup_restore)
+
+    before = {
+        path.relative_to(tmp_path).as_posix(): path.read_bytes()
+        for path in tmp_path.rglob("*")
+        if path.is_file() and ".git" not in path.parts
+    }
+
+    with pytest.raises(OSError, match="injected forward failure"):
+        transition_record(tmp_path, "TASK-001", "in_review")
+
+    after = {
+        path.relative_to(tmp_path).as_posix(): path.read_bytes()
+        for path in tmp_path.rglob("*")
+        if path.is_file() and ".git" not in path.parts
+    }
+    assert after == before
+    assert not list(tmp_path.rglob("*.pgk-backup"))
+    assert not list(tmp_path.rglob("*.pgk-tmp"))
+
+
+def test_transition_preserves_existing_crlf_newlines(tmp_path: Path):
+    init_project(tmp_path)
+    task, _verification = _v2_chain(tmp_path)
+    activity = tmp_path / "docs/activity/ACTIVITY.md"
+    for path in (task, activity):
+        path.write_bytes(path.read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))
+
+    transition_record(tmp_path, "TASK-001", "in_review")
+
+    for path in (task, activity):
+        raw = path.read_bytes()
+        assert b"\r\n" in raw
+        assert b"\n" not in raw.replace(b"\r\n", b"")
 
 
 def test_record_commit_requires_git_and_resolves_after_commit(tmp_path: Path):

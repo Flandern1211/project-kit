@@ -308,7 +308,7 @@ def run_checks(root: str | Path) -> CheckResult:
     required_views = tuple((governance_dir / Path(path).relative_to(Path("docs"))).as_posix() for path in REQUIRED_VIEWS)
     baseline = tuple(
         (governance_dir / Path(item).relative_to(Path("docs"))).as_posix()
-        if visibility != "public" and item.startswith("docs/") else item
+        if governance_dir.as_posix().rstrip("/") != "docs" and item.startswith("docs/") else item
         for item in BASELINE
     )
     required_artifacts = tuple((governance_dir / Path(path).relative_to(Path("docs"))).as_posix() if path.startswith("docs/") else path for path in required_artifacts_for_profile(profile))

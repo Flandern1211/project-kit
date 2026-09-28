@@ -5,7 +5,7 @@ import pytest
 from project_governance.checks import run_checks
 from project_governance.config import load_config
 from project_governance.records import create_record
-from project_governance.scaffold import init_project
+from project_governance.scaffold import adopt_project, init_project
 
 
 def test_team_private_initializes_governance_in_pgk_for_private_repo(tmp_path: Path):
@@ -62,6 +62,40 @@ def test_public_visibility_keeps_backward_compatible_docs_layout(tmp_path: Path)
     assert result.governance_dir == "docs"
     assert (tmp_path / "docs/INDEX.md").is_file()
     assert ".pgk/" not in (tmp_path / ".gitignore").read_text(encoding="utf-8")
+
+
+def test_public_visibility_honors_explicit_custom_governance_directory(tmp_path: Path):
+    result = init_project(
+        tmp_path,
+        visibility="public",
+        governance_dir="governance",
+    )
+
+    assert result.governance_dir == "governance"
+    assert (tmp_path / "governance/INDEX.md").is_file()
+    assert (tmp_path / "governance/requirements/INDEX.md").is_file()
+    assert not (tmp_path / "docs/INDEX.md").exists()
+    assert "governance/INDEX.md" in (tmp_path / "README.md").read_text(encoding="utf-8")
+    assert load_config(tmp_path / ".project-governance.toml").governance_dir == "governance"
+    assert run_checks(tmp_path).ok
+
+
+@pytest.mark.parametrize(
+    "visibility,governance_dir",
+    [("team-private", ".pgk"), ("hybrid", ".pgk"), ("public", "governance")],
+)
+def test_adopt_reports_configured_governance_tree_without_default_docs_false_positives(
+    tmp_path: Path, visibility: str, governance_dir: str
+):
+    kwargs = {"visibility": visibility}
+    if visibility == "public":
+        kwargs["governance_dir"] = governance_dir
+    init_project(tmp_path, **kwargs)
+
+    report = adopt_project(tmp_path)
+
+    assert f"{governance_dir}/INDEX.md" in report.existing
+    assert "docs/INDEX.md" not in report.missing
 
 
 def test_invalid_visibility_is_rejected(tmp_path: Path):

@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
-from .config import default_visibility_dirs, validate_collaboration_mode, validate_profile, validate_visibility, validate_visibility_dirs
+from .config import default_visibility_dirs, load_config, validate_collaboration_mode, validate_profile, validate_visibility, validate_visibility_dirs
 from .git_context import inspect_git
 from .version import __version__
 
@@ -326,7 +326,7 @@ def files_for_visibility(
     default_governance, default_public = default_visibility_dirs(visibility)
     governance_dir, public_docs_dir = validate_visibility_dirs(visibility, governance_dir or default_governance, public_docs_dir or default_public)
     source = files_for_profile(profile)
-    if visibility == "public":
+    if visibility == "public" and governance_dir == "docs":
         return source
     result: dict[str, str] = {}
     for relative, template in source.items():
@@ -434,8 +434,18 @@ _MAPPINGS = {"docs/coding/PRD.md": "requirements_index", "docs/coding/TSD.md": "
 def adopt_project(root: str | Path) -> AdoptionReport:
     root = Path(root)
     if not root.exists() or not root.is_dir(): raise ValueError(f"project root does not exist: {root}")
-    existing = tuple(relative for relative in STANDARD_FILES if (root / relative).exists())
-    missing = tuple(relative for relative in STANDARD_FILES if not (root / relative).exists())
+    try:
+        config = load_config(root / ".project-governance.toml")
+        expected_files = files_for_visibility(
+            config.profile,
+            config.visibility,
+            config.governance_dir,
+            config.public_docs_dir,
+        )
+    except (OSError, ValueError):
+        expected_files = STANDARD_FILES
+    existing = tuple(relative for relative in expected_files if (root / relative).exists())
+    missing = tuple(relative for relative in expected_files if not (root / relative).exists())
     mappings = tuple({"path": path, "role": role} for path, role in _MAPPINGS.items() if (root / path).exists())
     from .migration import DEFAULT_EXCLUDE_PATTERNS, DEFAULT_SCAN_ROOTS, scan_project
     candidates = tuple(item.as_dict() for item in scan_project(root))

@@ -9,7 +9,14 @@ from .frontmatter import FrontmatterError, parse_frontmatter
 from .config import load_config
 from .git_context import GitContext, inspect_git
 from .models import RecordType, Status
-from .records import append_activity, update_indexes, update_work_index
+from .records import (
+    RecordCandidate,
+    _atomic_update,
+    _ensure_views_writable,
+    _record_candidates,
+    _render_activity_append,
+    expected_generated_views,
+)
 
 
 START_MARKER = "<!-- PGK_HANDOFF_START -->"
@@ -215,13 +222,20 @@ def update_handoff(
     if not dry_run:
         # Validate all protected views before changing the record so an
         # unmarked project-owned view cannot leave a partial handoff.
-        update_work_index(root, dry_run=True)
-        update_indexes(root, dry_run=True)
-        activity_path = root / load_config(root / ".project-governance.toml").governance_dir / "activity/ACTIVITY.md"
-        if activity_path.exists() and "<!-- PGK_GENERATED: activity -->" not in activity_path.read_text(encoding="utf-8"):
-            raise FileExistsError(f"refusing to overwrite project-owned view: {activity_path}")
-        record.write_text(updated, encoding="utf-8")
-        update_work_index(root)
-        update_indexes(root)
-        append_activity(root, "pgk", "handoff", task_id, context.head, "updated")
+        _ensure_views_writable(root)
+        updated_metadata, updated_body = parse_frontmatter(updated)
+        candidates = _record_candidates(root)
+        for index, candidate in enumerate(candidates):
+            if candidate.path == record:
+                candidates[index] = RecordCandidate(record, updated_metadata, updated_body)
+                break
+        else:
+            raise HandoffError(f"task or bug record is not indexable: {record}")
+        updates = {record: updated}
+        updates.update(expected_generated_views(root, candidates=candidates))
+        activity_path, activity_content = _render_activity_append(
+            root, "pgk", "handoff", task_id, context.head, "updated"
+        )
+        updates[activity_path] = activity_content
+        _atomic_update(updates)
     return record

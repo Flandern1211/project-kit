@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import posixpath
 import re
+import subprocess
 from dataclasses import dataclass, replace
 from datetime import date
 from pathlib import Path
@@ -22,9 +23,9 @@ DEFAULT_EXCLUDE_PATTERNS = (
     ".git", ".agent", ".venv", "node_modules", "vendor", "build", "dist", "__pycache__",
     ".pytest_cache", ".mypy_cache", ".ruff_cache", ".worktrees", ".superpowers", "tmp", "temp", ".tmp",
 )
-GENERATED_DOCUMENT_DIRS = {
-    "docs/requirements", "docs/design", "docs/decisions", "docs/migrations", "docs/work",
-    "docs/reviews", "docs/verification", "docs/templates", "docs/operations",
+GENERATED_DOCUMENT_SUFFIXES = {
+    "requirements", "design", "decisions", "migrations", "work",
+    "reviews", "verification", "templates", "operations",
 }
 SUPPORTED_SUFFIXES = {".md": "markdown", ".markdown": "markdown", ".txt": "text"}
 NON_DOCUMENT_SUFFIXES = {".py", ".pyc", ".go", ".js", ".ts", ".java", ".rs", ".c", ".h", ".cpp", ".class", ".dll", ".exe", ".bin"}
@@ -148,9 +149,20 @@ def _is_excluded(relative: str, path: Path, patterns: Sequence[str]) -> bool:
     return False
 
 
-def _is_generated(relative: str) -> bool:
+def _generated_document_dirs(root: Path) -> tuple[str, ...]:
+    governance_dir = Path(load_config(root / ".project-governance.toml").governance_dir)
+    generated = [
+        (governance_dir / suffix).as_posix().casefold()
+        for suffix in sorted(GENERATED_DOCUMENT_SUFFIXES)
+    ]
+    if governance_dir.as_posix().strip("/") != "docs":
+        generated.append(governance_dir.as_posix().casefold())
+    return tuple(generated)
+
+
+def _is_generated(relative: str, generated_dirs: Sequence[str]) -> bool:
     normalized = relative.casefold()
-    return any(normalized == item or normalized.startswith(item + "/") for item in GENERATED_DOCUMENT_DIRS)
+    return any(normalized == item or normalized.startswith(item + "/") for item in generated_dirs)
 
 
 def _is_sensitive_name(path: Path) -> str | None:
@@ -206,14 +218,19 @@ def _expand_roots(root: Path, scan_roots: Sequence[str]) -> tuple[Path, ...]:
     return tuple(dict.fromkeys(result))
 
 
-def _files_under(root: Path, base: Path, patterns: Sequence[str]) -> list[tuple[str, Path]]:
+def _files_under(
+    root: Path,
+    base: Path,
+    patterns: Sequence[str],
+    generated_dirs: Sequence[str],
+) -> list[tuple[str, Path]]:
     paths = [base] if base.is_file() else sorted(base.rglob("*"))
     result: list[tuple[str, Path]] = []
     for path in paths:
         if not path.is_file():
             continue
         relative = _relative(root, path)
-        if _is_excluded(relative, path, patterns) or _is_generated(relative):
+        if _is_excluded(relative, path, patterns) or _is_generated(relative, generated_dirs):
             continue
         result.append((relative, path))
     return result
@@ -232,9 +249,10 @@ def scan_project(
         raise ValueError(f"project root does not exist: {root}")
     roots = _expand_roots(root, tuple(scan_roots) if scan_roots is not None else _default_roots(root))
     patterns = tuple(exclude_patterns) if exclude_patterns is not None else _default_excludes(root)
+    generated_dirs = _generated_document_dirs(root)
     discovered: dict[str, Path] = {}
     for base in roots:
-        for relative, path in _files_under(root, base, patterns):
+        for relative, path in _files_under(root, base, patterns, generated_dirs):
             discovered[relative] = path
 
     result: list[MigrationCandidate] = []
@@ -279,13 +297,25 @@ def scan_project(
 
 
 _TYPE_DIRECTORY = {
-    "requirement": Path("docs/requirements"),
-    "design": Path("docs/design"),
-    "decision": Path("docs/decisions"),
-    "task": Path("docs/work/tasks"),
-    "bug": Path("docs/work/bugs"),
+    "requirement": Path("requirements"),
+    "design": Path("design"),
+    "decision": Path("decisions"),
+    "task": Path("work/tasks"),
+    "bug": Path("work/bugs"),
 }
 _MIGRATION_ID_RE = re.compile(r"^MIG-[A-Za-z0-9][A-Za-z0-9._-]*$")
+
+
+def _governance_directory(root: Path) -> Path:
+    return Path(load_config(root / ".project-governance.toml").governance_dir)
+
+
+def _record_directory(root: Path, record_type: str) -> Path:
+    return _governance_directory(root) / _TYPE_DIRECTORY[record_type]
+
+
+def _migration_directory(root: Path) -> Path:
+    return root / _governance_directory(root) / "migrations"
 
 
 def _validate_entry_shape(root: Path, entry: MigrationEntry) -> None:
@@ -295,7 +325,7 @@ def _validate_entry_shape(root: Path, entry: MigrationEntry) -> None:
         if entry.target_id or entry.target_path:
             raise ValueError(f"migration target metadata has no type: {entry.item_id}")
         return
-    expected_directory = (root / _TYPE_DIRECTORY[entry.suggested_type]).resolve()
+    expected_directory = (root / _record_directory(root, entry.suggested_type)).resolve()
     expected_prefix = RECORD_PREFIXES[RecordType(entry.suggested_type)]
     if not entry.target_id or not entry.target_id.startswith(expected_prefix):
         raise ValueError(f"migration target id does not match type: {entry.item_id}")
@@ -315,7 +345,7 @@ def _validate_entry_shape(root: Path, entry: MigrationEntry) -> None:
 def _migration_path(root: Path, migration_id: str) -> Path:
     if not _MIGRATION_ID_RE.fullmatch(migration_id):
         raise ValueError(f"invalid migration id: {migration_id}")
-    matches = sorted((root / "docs/migrations").glob(f"{migration_id}-*.md"))
+    matches = sorted(_migration_directory(root).glob(f"{migration_id}-*.md"))
     if len(matches) == 1:
         return matches[0]
     if not matches:
@@ -329,7 +359,9 @@ def _target_for(root: Path, migration_id: str, index: int, candidate: MigrationC
     prefix = RECORD_PREFIXES[RecordType(candidate.suggested_type)]
     target_id = f"{prefix}{migration_id}-{index:03d}"
     slug = re.sub(r"[^\w]+", "-", Path(candidate.source_path).stem, flags=re.UNICODE).strip("-").lower() or "document"
-    target_path = (_TYPE_DIRECTORY[candidate.suggested_type] / f"{target_id}-{slug}.md").as_posix()
+    target_path = (
+        _record_directory(root, candidate.suggested_type) / f"{target_id}-{slug}.md"
+    ).as_posix()
     return target_id, target_path
 
 
@@ -366,7 +398,7 @@ def _parse_value(block: str, key: str) -> str:
     return match.group(1).strip() if match else ""
 
 
-def _parse_plan(path: Path) -> MigrationPlan:
+def _parse_plan(root: Path, path: Path) -> MigrationPlan:
     text = path.read_text(encoding="utf-8")
     metadata, body = parse_frontmatter(text)
     if metadata.type is not RecordType.MIGRATION:
@@ -417,7 +449,7 @@ def _parse_plan(path: Path) -> MigrationPlan:
         )
         if _parse_value(block, "item_id") != item_id:
             raise ValueError(f"migration item heading does not match item_id: {item_id}")
-        _validate_entry_shape(path.parents[2], entry)
+        _validate_entry_shape(root, entry)
         entries.append(entry)
     source_root = _parse_value(body, "source_root") or "."
     git_snapshot = tuple((key, _parse_value(body, key)) for key in ("branch", "head", "worktree", "dirty") if _parse_value(body, key))
@@ -427,7 +459,7 @@ def _parse_plan(path: Path) -> MigrationPlan:
 
 def load_migration_plan(root: str | Path, migration_id: str) -> MigrationPlan:
     root = Path(root).resolve()
-    plan = _parse_plan(_migration_path(root, migration_id))
+    plan = _parse_plan(root, _migration_path(root, migration_id))
     if plan.migration_id != migration_id:
         raise ValueError(f"migration record id does not match filename: {migration_id}")
     return plan
@@ -436,7 +468,7 @@ def load_migration_plan(root: str | Path, migration_id: str) -> MigrationPlan:
 def _next_migration_id(root: Path) -> str:
     used = {
         match.group(1)
-        for path in (root / "docs/migrations").glob("MIG-*-migration-plan.md")
+        for path in _migration_directory(root).glob("MIG-*-migration-plan.md")
         if (match := re.match(r"^(MIG-[A-Za-z0-9][A-Za-z0-9._-]*)-migration-plan\.md$", path.name))
     }
     number = 1
@@ -462,7 +494,7 @@ def create_migration_plan(
         raise ValueError("migration id must use MIG- prefix and safe filename characters")
     if migration_id in {
         match.group(1)
-        for path in (root / "docs/migrations").glob("MIG-*-migration-plan.md")
+        for path in _migration_directory(root).glob("MIG-*-migration-plan.md")
         if (match := re.match(r"^(MIG-[A-Za-z0-9][A-Za-z0-9._-]*)-migration-plan\.md$", path.name))
     }:
         raise FileExistsError(f"migration record already exists: {migration_id}")
@@ -478,7 +510,7 @@ def create_migration_plan(
             suggested_type=candidate.suggested_type, confidence=candidate.confidence, reason=candidate.reason,
             sensitive=candidate.sensitive, status=entry_status,
         ))
-    path = root / "docs/migrations" / f"{migration_id}-migration-plan.md"
+    path = _migration_directory(root) / f"{migration_id}-migration-plan.md"
     if dry_run:
         return path
     created = create_record(root, "migration", migration_id, "Migration plan", status=Status.DRAFT, dry_run=False)
@@ -496,6 +528,27 @@ def _capture_git_snapshot(root: Path) -> tuple[tuple[str, str], ...]:
     except ValueError:
         return (("branch", "unavailable"), ("head", "unavailable"), ("worktree", str(root)), ("dirty", "unknown"))
     return (("branch", context.branch), ("head", context.head), ("worktree", str(root)), ("dirty", str(context.dirty).lower()))
+
+
+def _target_is_dirty(root: Path, target: Path) -> bool:
+    """Return whether a target path has uncommitted Git changes."""
+
+    try:
+        inspect_git(root)
+        relative = target.resolve().relative_to(root.resolve()).as_posix()
+    except (ValueError, OSError):
+        return False
+    try:
+        result = subprocess.run(
+            ["git", "status", "--porcelain", "--", relative],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return False
+    return bool(result.stdout.strip())
 
 
 def _rewrite_plan(plan: MigrationPlan, *, approval: str, entries: Sequence[MigrationEntry], status: str | None = None, execution_git: Sequence[tuple[str, str]] | None = None) -> None:
@@ -677,7 +730,8 @@ def _verification_text(metadata: RecordMetadata, migration_id: str, applied: Seq
 
 def _create_migration_verification(root: Path, migration_id: str, applied: Sequence[str], paths: Sequence[str]) -> list[str]:
     verification_id = f"VER-{migration_id}"
-    existing = sorted((root / "docs/verification").glob(f"{verification_id}-*.md"))
+    verification_directory = root / _governance_directory(root) / "verification"
+    existing = sorted(verification_directory.glob(f"{verification_id}-*.md"))
     if existing:
         return [path.relative_to(root).as_posix() for path in existing]
     created = create_record(root, "verification", verification_id, f"Verify migration {migration_id}", related=[migration_id], status=Status.VERIFIED)
@@ -754,6 +808,10 @@ def apply_migration(root: str | Path, migration_id: str, *, item_ids: Sequence[s
             _relative(root, target)
             generated = _render_governance_copy(root, migration_id, entry, text, migrated_targets)
             if target.exists():
+                if _target_is_dirty(root, target):
+                    conflicts.append(entry.item_id)
+                    updated_entries.append(replace(entry, status="conflict", error="target_dirty"))
+                    continue
                 if _normalize_generated(target.read_text(encoding="utf-8")) == _normalize_generated(generated):
                     skipped.append(entry.item_id)
                     generated_paths.append(entry.target_path)

@@ -122,3 +122,37 @@ def test_activity_refuses_unmarked_project_owned_file(tmp_path: Path):
     activity.write_text("# project-owned activity\n", encoding="utf-8")
     with pytest.raises(FileExistsError):
         append_activity(tmp_path, "agent", "verify", "VER-001", "HEAD", "ok")
+
+
+def test_activity_append_failure_does_not_rewrite_existing_history(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    init_project(tmp_path)
+    activity = tmp_path / "docs/activity/ACTIVITY.md"
+    before = activity.read_bytes()
+
+    def fail_write(_data: str) -> int:
+        raise OSError("injected append failure")
+
+    original_open = Path.open
+
+    class FailingAppend:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        write = staticmethod(fail_write)
+
+    def open_with_failed_append(path: Path, mode: str = "r", *args, **kwargs):
+        if path == activity and mode == "a":
+            return FailingAppend()
+        return original_open(path, mode, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "open", open_with_failed_append)
+
+    with pytest.raises(OSError, match="injected append failure"):
+        append_activity(tmp_path, "agent", "verify", "VER-001", "HEAD", "ok")
+
+    assert activity.read_bytes() == before
