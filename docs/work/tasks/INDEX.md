@@ -27,3 +27,4 @@ The index is generated from records.
 - [TASK-022](TASK-022-fix-custom-governance-directory-routing.md) — verified
 - [TASK-023](TASK-023-validate-configured-governance-paths.md) — verified
 - [TASK-024](TASK-024-atomicize-record-view-and-handoff-writes.md) — verified
+- [TASK-025](TASK-025-document-pgk-reliability-fixes.md) — verified

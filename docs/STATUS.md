@@ -4,13 +4,13 @@
 status: active_development
 project_stage: active_development
 version: 0.2.0.dev1
-active_task: TASK-024
+active_task: TASK-025
 current_requirement: REQ-001-ZH
 current_design: DES-002-ZH
-current_task: TASK-024
+current_task: TASK-025
 owner: Codex
-blocker: None for TASK-021 through TASK-024 implementation; remote integration remains separately authorized
-next_action: review the verification handoff and decide whether to integrate the task branch
+blocker: None known for verified TASK-021 through TASK-025 work
+next_action: review external integration evidence and downstream adoption readiness
 git_state: git_initialized
 updated: 2026-09-28
 ```
@@ -81,6 +81,10 @@ root. Both are verified by VER-009 and VER-010.
 TASK-024 extends the transaction boundary to record creation, generated-view
 refresh, and handoff updates; VER-011 covers failure-injection rollback.
 
+TASK-025 synchronizes the bilingual READMEs, usage guide, changelog, and
+current status with TASK-021–024. It documents the remaining filesystem
+recovery limitations without changing the `0.2.0.dev1` Kit version.
+
 ## Known constraints
 
 - v0.1 uses Python 3.11+ and the standard library at runtime;
@@ -131,8 +135,11 @@ refresh, and handoff updates; VER-011 covers failure-injection rollback.
   and [VER-010](verification/VER-010-configured-governance-path-validation.md).
 - TASK-024: record/index/handoff failure-injection tests passed; see
   [VER-011](verification/VER-011-record-view-handoff-atomicity.md).
+- TASK-025: bilingual documentation review, 212-test full regression,
+  compilation, diff and view checks passed; see
+  [VER-012](verification/VER-012-verify-pgk-reliability-documentation.md).
 
 ## Next action
 
-Review the verification handoff and decide whether to integrate the task branch.
-The existing Skill PR remains unrelated; remote actions require separate authorization.
+Review external integration evidence and downstream adoption readiness. The
+existing Skill PR remains unrelated.

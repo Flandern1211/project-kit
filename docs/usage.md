@@ -15,12 +15,12 @@ project itself, or mutate remote platforms.
 | `pgk adopt` | 只读盘点已有治理文件、Git 状态、候选文档和敏感项 | 不写文件 | 候选类型、敏感内容和排除规则 |
 | `pgk doctor` | 汇总 check、adoption、Git 和 Python/pytest/临时目录预检 | 只读 | 环境阻塞与治理问题必须分开判断 |
 | `pgk check` | 检查基线、链接、frontmatter、ID、状态、终态合同、生成视图、STATUS 引用、配置、Kit 版本、Git 和迁移结果 | 只读；发现问题返回退出码 1 | 不得把结构完整误报为验收完成 |
-| `pgk new` | 创建 requirement/design/decision/task/bug/review/verification/migration 记录 | 拒绝重复 ID 和覆盖；支持 `--dry-run` | 上游记录、owner、scope 和证据字段 |
-| `pgk index` | 重建记录索引、工作索引和 BOARD | 只重写带 `PGK_GENERATED` 标记的视图 | 记录是否完整入索引 |
-| `pgk transition` | 校验并执行正式记录状态迁移；终态任务/缺陷强制验证 terminal-v2 合同 | 原子更新 frontmatter、生成视图和活动记录；支持 `--dry-run` | 每个 `AC-*` 是否有 reciprocal VER 结果和证据 |
+| `pgk new` | 创建 requirement/design/decision/task/bug/review/verification/migration 记录 | 拒绝重复 ID 和覆盖；记录、视图、活动一并暂存和回滚；支持 `--dry-run` | 上游记录、owner、scope 和证据字段 |
+| `pgk index` | 重建记录索引、工作索引和 BOARD | 只重写带 `PGK_GENERATED` 标记的视图；失败时回滚 | 记录是否完整入索引 |
+| `pgk transition` | 校验并执行正式记录状态迁移；终态任务/缺陷强制验证 terminal-v2 合同 | 分阶段更新 frontmatter、生成视图和活动记录；失败时回滚；支持 `--dry-run` | 每个 `AC-*` 是否有 reciprocal VER 结果和证据 |
 | `pgk upgrade` | 预览或应用已治理项目的版本化 Kit 合同升级 | 默认只读；仅 `--apply` 写入；冲突时零写入，配置最后更新 | 逐文件 diff/hash、项目自定义章节、来源版本和冲突 |
-| `pgk handoff` | 更新 TASK/BUG 的受控 handoff 区块和活动记录 | 只写标记区；不改变 frontmatter 状态 | branch、HEAD、dirty、未提交内容、阻塞和唯一下一步 |
-| `pgk migrate` | 包含 `plan`、`approve`、`apply`：扫描、审查并执行文档迁移 | 原文件不移动、不删除；只应用明确批准的条目 | 来源、目标、哈希、敏感性、置信度、链接、冲突和 VER 证据 |
+| `pgk handoff` | 更新 TASK/BUG 的受控 handoff 区块和活动记录 | 只写标记区；记录、视图、活动失败时回滚；不改变 frontmatter 状态 | branch、HEAD、dirty、未提交内容、阻塞和唯一下一步 |
+| `pgk migrate` | 包含 `plan`、`approve`、`apply`：扫描、审查并执行文档迁移 | 原文件不移动、不删除；只应用明确批准的条目；脏目标阻断 | 来源、目标、哈希、敏感性、置信度、链接、冲突和 VER 证据 |
 
 后续只规划两项扩展：并行 Agent 协作安全/worktree 管理，以及经任务级明确授权的本地
 自动 commit。Web/托管后台、模型调用、复杂格式转换、语义改写、Git 历史清理、远程
@@ -126,6 +126,12 @@ Standard 基础上增加风险、安全和发布索引。它只创建不存在�
 公开文档入口；`public` 保持治理文档位于 `docs/`。Kit 不自动修改远程仓库权限，
 也不自动删除或重写已有 Git 历史。
 
+`public` 可以显式指定 `--governance-dir governance`，默认布局仍为 `docs/`。
+`team-private`/`hybrid` 也可配置独立治理根；已治理项目的 `adopt`/`doctor`
+据此报告文件，迁移方案、治理副本、验证和索引也落在该目录。配置中的
+`governance_dir`/`public_docs_dir` 必须是安全的相对目录；越界或重叠等无效配置
+由 `pgk check` 报告，写入命令在使用前拒绝。
+
 `init` uses the `standard` profile by default. It creates only missing files;
 existing files are reported as `skipped` and are never overwritten. Preview
 writes without changing files:
@@ -191,6 +197,8 @@ pgk migrate apply MIG-001 --root C:\path\to\project --json
 ```
 
 `plan` 写入候选方案，`approve` 只改变条目状态，`apply` 只复制明确批准的条目。原文件保留在原位置，治理副本为 `draft` 并包含来源路径、来源哈希和迁移批次。重复运行具有幂等性；源变化或目标冲突会报告且不覆盖。
+如果目标治理副本路径有未提交 Git 修改，即使文件内容恰好等于本次生成结果，
+`apply` 也将该条目标为 `conflict`，批次不会被误判为已验证；先人工审查目标变化。
 
 迁移 Markdown 副本时，Kit 会把指向同批次治理副本的相对链接改写为新路径；指向仍保留在源项目中的现有文件时，改写为从治理副本可解析的源文件路径。外部链接、锚点和不存在的目标不改写，并保留为人工审查项。
 
@@ -320,6 +328,18 @@ Project-owned indexes are rejected and must be reviewed manually.
 
 The `changed` array from `--dry-run --json` lists views that currently differ
 and would be refreshed.
+
+`new`、`index`、`transition`、`handoff` 在同目录准备临时文件，再替换本次涉及的
+记录、生成视图和活动文件；后续替换失败时回滚已替换目标。目标是符号链接时会拒绝
+替换；如果回滚也失败，会报告不完整回滚并保留 `.pgk-backup` 文件供人工恢复。
+这不是跨进程/跨文件系统事务：失败时新建的空目录可能残留，目标文件权限或 ACL
+等元数据也可能变化。此时应先保存备份并人工检查，不要直接重试或清理恢复文件。
+
+These commands stage affected records, generated views, and activity files
+before replacement and roll back earlier replacements on failure. Symlink
+targets are refused. If rollback also fails, `.pgk-backup` recovery files are
+preserved for manual review. This is not a cross-process or cross-filesystem
+transaction; empty directories or file metadata changes may still need review.
 
 ## 6. 正式状态迁移 / Formal status transitions
 

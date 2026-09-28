@@ -173,6 +173,18 @@ pgk migrate apply MIG-001 --root C:\path\to\project --json
 Migration preserves originals and creates source-hashed `draft` governance copies. Unapproved items are not written, and conflicts or sensitive content are never copied or overwritten.
 Resolvable local Markdown links are rewritten for the copied location; missing targets remain unchanged for human review.
 
+Governance records default to `docs/` for `public` visibility and `.pgk/` for
+`team-private` or `hybrid`. With an explicit `--governance-dir`, initialization,
+`adopt`/`doctor`, and migration use the configured location. Invalid or escaping
+directory settings are rejected. `migrate apply` reports a conflict rather than
+overwriting a target with uncommitted Git changes, even if its content matches
+the generated copy.
+
+`pgk new`, `index`, `transition`, and `handoff` stage their record, generated-view,
+and activity updates and roll them back on failure. If rollback itself fails,
+the Kit reports the error and preserves recovery backups; this is not a global
+cross-process or cross-filesystem transaction. See the [usage guide](docs/usage.md).
+
 ## Documentation
 
 - [Documentation index](docs/INDEX.md)

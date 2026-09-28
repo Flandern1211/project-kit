@@ -36,6 +36,7 @@ No records yet.
 - [TASK-022](tasks/TASK-022-fix-custom-governance-directory-routing.md) — verified
 - [TASK-023](tasks/TASK-023-validate-configured-governance-paths.md) — verified
 - [TASK-024](tasks/TASK-024-atomicize-record-view-and-handoff-writes.md) — verified
+- [TASK-025](tasks/TASK-025-document-pgk-reliability-fixes.md) — verified
 
 ## Bugs
 

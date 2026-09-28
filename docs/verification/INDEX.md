@@ -15,3 +15,4 @@ The index is generated from records.
 - [VER-009](VER-009-custom-governance-directory-routing.md) — verified
 - [VER-010](VER-010-configured-governance-path-validation.md) — verified
 - [VER-011](VER-011-record-view-handoff-atomicity.md) — verified
+- [VER-012](VER-012-verify-pgk-reliability-documentation.md) — verified

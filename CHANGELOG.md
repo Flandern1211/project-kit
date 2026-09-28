@@ -19,3 +19,9 @@
   contract to newly generated task, bug, and verification records.
 - Add conflict-safe `pgk upgrade` preview/apply for governed projects, with
   managed-section merges, atomic writes, rollback, and version-last updates.
+- Stage record creation, generated-view refresh, formal transitions, and
+  handoff updates together; restore earlier targets after a failed write and
+  retain recovery backups if rollback also fails.
+- Honor configured governance roots in public initialization, adoption reports,
+  and migration plan/apply/verification; reject invalid directory settings and
+  block dirty migration targets even when their contents match generated copies.

@@ -150,6 +150,15 @@ pgk migrate apply MIG-001 --root C:\path\to\project --json
 迁移会保留原文件，只生成带来源哈希的 `draft` 治理副本；未批准条目不会写入，冲突和敏感内容不会被覆盖或复制。
 Markdown 副本会重写可解析的本地相对链接，目标不存在时保留原链接并交由人工审查。
 
+治理记录默认位于 `docs/`（`public`）或 `.pgk/`（`team-private`/`hybrid`）；
+显式设置 `--governance-dir` 后，初始化、`adopt`/`doctor` 和迁移都按配置的目录工作。
+无效或越界的治理目录配置会被拒绝；目标治理副本有未提交 Git 修改时，
+即使内容与生成结果相同，`migrate apply` 也会报告冲突而不覆盖。
+
+`pgk new`、`index`、`transition` 和 `handoff` 对其记录、生成视图及活动记录
+使用分阶段替换和失败回滚。若回滚本身失败，Kit 会报告错误并保留恢复备份；
+这不构成跨进程或跨文件系统的全局事务保证。详见[使用说明](docs/usage.md)。
+
 ## 文档
 
 - [项目文档索引](docs/INDEX.md)
